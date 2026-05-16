@@ -24,8 +24,8 @@ android {
         applicationId = "com.aurganize.aurganize_lyf"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-        minSdk = flutter.minSdkVersion
-        targetSdk = flutter.targetSdkVersion
+        minSdk = 31 // Android 12 or later as per SRS
+        targetSdk = 34 // Android 14 is the target version
         versionCode = flutter.versionCode
         versionName = flutter.versionName
     }
