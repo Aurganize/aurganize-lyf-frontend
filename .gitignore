@@ -58,3 +58,4 @@ Thumbs.db
 **/*.freezed.dart
 **/*.config.dart
 
+ios/Podfile
