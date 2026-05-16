@@ -1,3 +1,4 @@
+import 'package:aurganize_lyf/core/extensions/context_extensions.dart';
 import 'package:aurganize_lyf/core/theme/app_colors.dart';
 import 'package:aurganize_lyf/core/theme/app_typography.dart';
 import 'package:flutter/material.dart';
@@ -18,73 +19,73 @@ class AurganizeLyfApp extends StatelessWidget {
             brightness: Brightness.light,
         ),
       ),
-      home: const _TypeScaleStream(),
+      home: const _ThemePreviewScreen._(),
     );
   }
 }
 
-class _TypeScaleStream extends StatelessWidget {
-  const _TypeScaleStream();
+
+class _ThemePreviewScreen extends StatelessWidget {
+  const _ThemePreviewScreen._();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.surfacePrimary,
+      appBar: AppBar(title: const Text('Aurganize Lyf'),),
       body: SafeArea(
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: <Widget>[
-              Text('Aurganize Lyf', style: AppTypography.display,),
-              const SizedBox(height: 24,),
-              Text('Title - 22/28/500', style: AppTypography.title,),
-              const SizedBox(height: 16,),
-              Text('Heading - 17/24/500', style: AppTypography.heading,),
+              Text('Title - screen titles', style: AppTypography.title,),
               const SizedBox(height: 16,),
               Text(
-                'Body - 14/20/400. This is the workhorse text style used for'
-                'plan item titles, conversation bubbles, and primary body.',
+                'Body - workhorse. The theme is now wired. Buttons, sheets,'
+                'snackbars, and inputs will inherit the design system'
+                'automatically',
                 style: AppTypography.body,
               ),
-              const SizedBox(height: 16,),
-              Text(
-                'Body 2 - 13/18/400. Used for notification body and settings rows.',
-                style: AppTypography.body2,
+              const SizedBox(height: 24,),
+              FilledButton(
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Marked done')),
+                    );
+                  },
+                  child: const Text('Primary button'),
               ),
-              const SizedBox(height: 16,),
-              Text(
-                'Caption - 11/15/400. Sub-labels and helper text.',
-                style: AppTypography.caption,
+              const SizedBox(height: 12,),
+              OutlinedButton(
+                  onPressed: () {
+                    //
+                  },
+                  child: const Text('Secondary Button'),
               ),
-              const SizedBox(height: 16,),
-              Text(
-                'EYEBROW - 10/14/500 +0.5 SP',
-                style: AppTypography.eyebrow,
+              const SizedBox(height: 12,),
+              TextButton(
+                  onPressed: () {},
+                  child: const Text('Tertiary Button'),
               ),
               const SizedBox(height: 24,),
-              const Divider(),
-              const SizedBox(height: 24,),
-              Text(
-                'bodyMuted variant - used for brand-colored action labels.',
-                style: AppTypography.bodyMuted,
-              ),
-              const SizedBox(height: 8,),
-              Text(
-                'bodyBrand variant - used for brand-colored action labels.',
-                style: AppTypography.bodyBrand,
-              ),
-              const SizedBox(height: 8,),
-              Container(
-                color: AppColors.brandPrimary,
-                padding: const EdgeInsets.all(8),
-                child: Text(
-                  'bodyOnBrand - used on brand-filled surfaces like the floating island.',
-                  style: AppTypography.bodyOnBrand,
+              TextField(
+                decoration: const InputDecoration(
+                  hintText: 'Capture an intention...',
                 ),
+                style: AppTypography.body,
               ),
-              const SizedBox(height: 8,),
-              Text(
-                'bodyStrikethrough - used on completed children in the project view',
-                style: AppTypography.bodyStrikethrough,
+              const SizedBox(height: 24,),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surfacePrimary,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.borderDefault, width: 0.5),
+                ),
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  'A surface-secondary card with a default border. The "you '
+                  'typed" quote block on the confirmation card deatil users'
+                  'this same treatment',
+                  style: AppTypography.body,
+                ),
               ),
             ],
           ),
@@ -92,6 +93,80 @@ class _TypeScaleStream extends StatelessWidget {
     );
   }
 }
+
+
+
+
+//
+// class _TypeScaleStream extends StatelessWidget {
+//   const _TypeScaleStream();
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       backgroundColor: AppColors.surfacePrimary,
+//       body: SafeArea(
+//           child: ListView(
+//             padding: const EdgeInsets.all(16),
+//             children: <Widget>[
+//               Text('Aurganize Lyf', style: AppTypography.display,),
+//               const SizedBox(height: 24,),
+//               Text('Title - 22/28/500', style: AppTypography.title,),
+//               const SizedBox(height: 16,),
+//               Text('Heading - 17/24/500', style: AppTypography.heading,),
+//               const SizedBox(height: 16,),
+//               Text(
+//                 'Body - 14/20/400. This is the workhorse text style used for'
+//                 'plan item titles, conversation bubbles, and primary body.',
+//                 style: AppTypography.body,
+//               ),
+//               const SizedBox(height: 16,),
+//               Text(
+//                 'Body 2 - 13/18/400. Used for notification body and settings rows.',
+//                 style: AppTypography.body2,
+//               ),
+//               const SizedBox(height: 16,),
+//               Text(
+//                 'Caption - 11/15/400. Sub-labels and helper text.',
+//                 style: AppTypography.caption,
+//               ),
+//               const SizedBox(height: 16,),
+//               Text(
+//                 'EYEBROW - 10/14/500 +0.5 SP',
+//                 style: AppTypography.eyebrow,
+//               ),
+//               const SizedBox(height: 24,),
+//               const Divider(),
+//               const SizedBox(height: 24,),
+//               Text(
+//                 'bodyMuted variant - used for brand-colored action labels.',
+//                 style: AppTypography.bodyMuted,
+//               ),
+//               const SizedBox(height: 8,),
+//               Text(
+//                 'bodyBrand variant - used for brand-colored action labels.',
+//                 style: AppTypography.bodyBrand,
+//               ),
+//               const SizedBox(height: 8,),
+//               Container(
+//                 color: AppColors.brandPrimary,
+//                 padding: const EdgeInsets.all(8),
+//                 child: Text(
+//                   'bodyOnBrand - used on brand-filled surfaces like the floating island.',
+//                   style: AppTypography.bodyOnBrand,
+//                 ),
+//               ),
+//               const SizedBox(height: 8,),
+//               Text(
+//                 'bodyStrikethrough - used on completed children in the project view',
+//                 style: AppTypography.bodyStrikethrough,
+//               ),
+//             ],
+//           ),
+//       ),
+//     );
+//   }
+// }
 
 
 
