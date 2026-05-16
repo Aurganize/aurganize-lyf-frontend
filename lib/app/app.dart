@@ -28,7 +28,6 @@ class _TypeScaleStream extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // TODO: implement build
     return Scaffold(
       backgroundColor: AppColors.surfacePrimary,
       body: SafeArea(
