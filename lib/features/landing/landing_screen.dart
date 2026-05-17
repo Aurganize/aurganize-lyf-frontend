@@ -1,4 +1,5 @@
 import 'package:aurganize_lyf/app/app.dart';
+import 'package:aurganize_lyf/features/landing/widgets/conversation_input_bar.dart';
 import 'package:aurganize_lyf/features/landing/widgets/conversation_stage.dart';
 import 'package:aurganize_lyf/features/landing/widgets/landing_app_header.dart';
 import 'package:aurganize_lyf/features/landing/widgets/peek_card_stack.dart';
@@ -215,27 +216,39 @@ class _ConversationPanelPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Text('CONVERSATION', style: AppTypography.eyebrow),
-          const SizedBox(height: AppSpacing.md),
-          Expanded(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        // Chat history area — Phase 07 Part 03 fills this with bubbles.
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
             child: Center(
               child: Text(
-                'Chat history and input land here in Phase 07.',
+                'Chat history lands here in Phase 07 Part 03.',
                 style: AppTypography.bodyMuted,
                 textAlign: TextAlign.center,
               ),
             ),
           ),
-          // Placeholder input bar so the bottom edge is visually anchored.
-          const _ConversationComposer(),
-          const SizedBox(height: AppSpacing.lg),
-        ],
-      ),
+        ),
+        // The real input bar — replaces the (typing area) placeholder.
+        ConversationInputBar(
+          autofocus: true,
+          onVoiceCapture: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Voice capture — Phase 07 Part 02'),
+              ),
+            );
+          },
+          onError: (Object error) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text("Couldn't save: $error")),
+            );
+          },
+        ),
+      ],
     );
   }
 }

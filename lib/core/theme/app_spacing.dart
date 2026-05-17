@@ -91,10 +91,10 @@ abstract final class AppSpacing {
   // ---------------------------------------------------------------------------
 
   /// Day tile width (PDD §9.1).
-  static const double dayTileWidth = 40;
+  static const double dayTileWidth = 60;
 
   /// Day tile height (PDD §9.1).
-  static const double dayTileHeight = 52;
+  static const double dayTileHeight = 78;
 
   /// Temperature dot diameter (PDD §9.2).
   static const double temperatureDotSize = 7;
