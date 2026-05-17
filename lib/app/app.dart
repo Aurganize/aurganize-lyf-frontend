@@ -28,11 +28,13 @@ import '../core/extensions/datetime_extensions.dart';
 import '../core/theme/app_theme.dart';
 import 'package:aurganize_lyf/features/capture/providers/parse_worker.dart';
 import '../domain/enums/capture_source.dart';
+import '../domain/models/plan_item.dart';
 import '../features/capture/providers/capture_controller.dart';
 import '../features/capture/providers/capture_providers.dart';
 import '../features/disposition/providers/disposition_controller.dart';
 import '../features/disposition/providers/disposition_toast.dart';
 import '../features/disposition/providers/question_rotator.dart';
+import '../features/landing/landing_screen.dart';
 import '../features/onboarding/onboarding_providers.dart';
 import '../features/onboarding/onboarding_screen.dart';
 import '../features/plan/providers/date_train_provider.dart';
@@ -66,26 +68,33 @@ class _AurganizeLyfAppState extends ConsumerState<AurganizeLyfApp> {
         loading: () => const _LaunchSplash(),
         error: (Object _, __) => const _LaunchSplash(),
         data: (bool done) => done
-            ? DevGalleryScreen(sections: <DevGallerySection>[
-          // (your existing gallery sections — temporary home until
-          //  Phase 05 Part 02 builds the landing screen)
-          DevGallerySection(
-            title: 'Dev controls',
-            description: 'Hidden in production — for development only.',
-            child: Row(
-              children: <Widget>[
-                OutlinedButton(
-                  onPressed: () async {
-                    await ref
-                        .read(onboardingCompletedProvider.notifier)
-                        .debugReset();
-                  },
-                  child: const Text('Reset onboarding'),
-                ),
-              ],
-            ),
-          ),
-        ],)
+            ? LandingScreen(
+          onOpenPlanItem: (PlanItem item) {
+            // Phase 05 Part 05 wires this to /detail/:id.
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Detail for ${item.title}')),
+            );
+          },
+          onOpenSettings: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Settings — Phase 06')),
+            );
+          },
+          onExpandIsland: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Conversation panel — Phase 07'),
+              ),
+            );
+          },
+          onVoiceCapture: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Voice capture — Phase 07'),
+              ),
+            );
+          },
+        )
             : OnboardingScreen(
           onGetStarted: () {
             // No-op for now — onboardingCompletedProvider flipping
