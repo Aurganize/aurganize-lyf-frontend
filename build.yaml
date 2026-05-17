@@ -1,0 +1,7 @@
+targets:
+  $default:
+    builders:
+      riverpod_generator:
+        options:
+        # Generated providers are always const-constructible singletons.
+        # No other options needed at this scale.

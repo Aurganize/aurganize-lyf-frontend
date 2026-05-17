@@ -1,13 +1,16 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'core/utils/logger.dart';
+import 'core/utils/logging_provider_observer.dart';
 import 'app/app.dart';
 
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  configureLogging();
 
   // Lock to portrait. The product is a thumb-touch-driver planner; landscape adds
   // zero value for v1.0 and created an extra layout surface to maintain.
@@ -28,8 +31,11 @@ Future<void> main() async {
   );
 
   runApp(
-    const ProviderScope(
-        child: AurganizeLyfApp(),
+    ProviderScope(
+        observers: <ProviderObserver>[
+          if(kDebugMode) LoggingProviderObserver(),
+        ],
+        child: const AurganizeLyfApp(),
     ),
   );
 }

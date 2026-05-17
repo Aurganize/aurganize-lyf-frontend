@@ -23,8 +23,27 @@ import 'package:aurganize_lyf/shared/widgets/temperature_dot.dart';
 import 'package:flutter/material.dart';
 import 'package:aurganize_lyf/features/dev_gallery/dev_gallery_screen.dart';
 
-class AurganizeLyfApp extends StatelessWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/extensions/datetime_extensions.dart';
+import '../core/theme/app_theme.dart';
+import 'package:aurganize_lyf/features/capture/providers/parse_worker.dart';
+import '../domain/enums/capture_source.dart';
+import '../features/capture/providers/capture_controller.dart';
+import '../features/capture/providers/capture_providers.dart';
+import '../features/disposition/providers/disposition_controller.dart';
+import '../features/disposition/providers/disposition_toast.dart';
+import '../features/disposition/providers/question_rotator.dart';
+import '../features/plan/providers/date_train_provider.dart';
+import '/features/auth/auth_providers.dart';
+
+class AurganizeLyfApp extends ConsumerStatefulWidget {
   const AurganizeLyfApp({super.key});
+
+  @override
+  ConsumerState<AurganizeLyfApp> createState() => _AurganizeLyfAppState();
+}
+
+class _AurganizeLyfAppState extends ConsumerState<AurganizeLyfApp> {
 
   final ParsedCardViewModel _sampleViewModel = const ParsedCardViewModel(
     planItemId: 'sample',
@@ -70,19 +89,22 @@ class AurganizeLyfApp extends StatelessWidget {
     ],
   );
 
+
+  @override
+  void initState() {
+    super.initState();
+    // Start the parsing loop. Idempotent — safe even on hot-reload.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(parseWorkerProvider.notifier).ensureRunning();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Aurganize Lyf',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        scaffoldBackgroundColor: AppColors.surfacePrimary,
-        colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFF0F6E56),
-            brightness: Brightness.light,
-        ),
-      ),
+      theme: AppTheme.light(),
       home: DevGalleryScreen(
           sections:<DevGallerySection>[
             const DevGallerySection(
@@ -414,258 +436,31 @@ class AurganizeLyfApp extends StatelessWidget {
                 ],
               ),
             ),
+            const DevGallerySection(
+              title: 'End-to-end capture',
+              description:
+              'Submit a real capture and watch the parse worker turn it into plan items. The "Pending cards" count below updates within ~1 second of parsing finishing.',
+              child: _CaptureDevSection(),
+            ),
+            const DevGallerySection(
+              title: 'Live date train',
+              description:
+              'The real date train, fed by dateTrainEntriesProvider. Submit captures above to see today\'s count increment; tap a past day to focus it.',
+              child: _LiveDateTrain(),
+            ),
+            const DevGallerySection(
+              title: 'End-to-end disposition',
+              description:
+              'Submit a capture above, then tap "Disposition the first pending item" to open the real sheet. The toast at the top of the screen reports the outcome.',
+              child: _DispositionDevSection(),
+            ),
           ],
       ),
     );
   }
 }
 
-//
-// class _ThemePreviewScreen extends StatelessWidget {
-//   const _ThemePreviewScreen._();
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(title: const Text('Aurganize Lyf'),),
-//       body: SafeArea(
-//           child: ListView(
-//             padding: const EdgeInsets.all(16),
-//             children: <Widget>[
-//               Text('Title - screen titles', style: AppTypography.title,),
-//               const SizedBox(height: 16,),
-//               Text(
-//                 'Body - workhorse. The theme is now wired. Buttons, sheets,'
-//                 'snackbars, and inputs will inherit the design system'
-//                 'automatically',
-//                 style: AppTypography.body,
-//               ),
-//               const SizedBox(height: 24,),
-//               FilledButton(
-//                   onPressed: () {
-//                     ScaffoldMessenger.of(context).showSnackBar(
-//                       const SnackBar(content: Text('Marked done')),
-//                     );
-//                   },
-//                   child: const Text('Primary button'),
-//               ),
-//               const SizedBox(height: 12,),
-//               OutlinedButton(
-//                   onPressed: () {
-//                     //
-//                   },
-//                   child: const Text('Secondary Button'),
-//               ),
-//               const SizedBox(height: 12,),
-//               TextButton(
-//                   onPressed: () {},
-//                   child: const Text('Tertiary Button'),
-//               ),
-//               const SizedBox(height: 24,),
-//               TextField(
-//                 decoration: const InputDecoration(
-//                   hintText: 'Capture an intention...',
-//                 ),
-//                 style: AppTypography.body,
-//               ),
-//               const SizedBox(height: 24,),
-//               Container(
-//                 decoration: BoxDecoration(
-//                   color: AppColors.surfacePrimary,
-//                   borderRadius: BorderRadius.circular(10),
-//                   border: Border.all(color: AppColors.borderDefault, width: 0.5),
-//                 ),
-//                 padding: const EdgeInsets.all(16),
-//                 child: Text(
-//                   'A surface-secondary card with a default border. The "you '
-//                   'typed" quote block on the confirmation card deatil users'
-//                   'this same treatment',
-//                   style: AppTypography.body,
-//                 ),
-//               ),
-//             ],
-//           ),
-//       ),
-//     );
-//   }
-// }
 
-
-
-
-//
-// class _TypeScaleStream extends StatelessWidget {
-//   const _TypeScaleStream();
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       backgroundColor: AppColors.surfacePrimary,
-//       body: SafeArea(
-//           child: ListView(
-//             padding: const EdgeInsets.all(16),
-//             children: <Widget>[
-//               Text('Aurganize Lyf', style: AppTypography.display,),
-//               const SizedBox(height: 24,),
-//               Text('Title - 22/28/500', style: AppTypography.title,),
-//               const SizedBox(height: 16,),
-//               Text('Heading - 17/24/500', style: AppTypography.heading,),
-//               const SizedBox(height: 16,),
-//               Text(
-//                 'Body - 14/20/400. This is the workhorse text style used for'
-//                 'plan item titles, conversation bubbles, and primary body.',
-//                 style: AppTypography.body,
-//               ),
-//               const SizedBox(height: 16,),
-//               Text(
-//                 'Body 2 - 13/18/400. Used for notification body and settings rows.',
-//                 style: AppTypography.body2,
-//               ),
-//               const SizedBox(height: 16,),
-//               Text(
-//                 'Caption - 11/15/400. Sub-labels and helper text.',
-//                 style: AppTypography.caption,
-//               ),
-//               const SizedBox(height: 16,),
-//               Text(
-//                 'EYEBROW - 10/14/500 +0.5 SP',
-//                 style: AppTypography.eyebrow,
-//               ),
-//               const SizedBox(height: 24,),
-//               const Divider(),
-//               const SizedBox(height: 24,),
-//               Text(
-//                 'bodyMuted variant - used for brand-colored action labels.',
-//                 style: AppTypography.bodyMuted,
-//               ),
-//               const SizedBox(height: 8,),
-//               Text(
-//                 'bodyBrand variant - used for brand-colored action labels.',
-//                 style: AppTypography.bodyBrand,
-//               ),
-//               const SizedBox(height: 8,),
-//               Container(
-//                 color: AppColors.brandPrimary,
-//                 padding: const EdgeInsets.all(8),
-//                 child: Text(
-//                   'bodyOnBrand - used on brand-filled surfaces like the floating island.',
-//                   style: AppTypography.bodyOnBrand,
-//                 ),
-//               ),
-//               const SizedBox(height: 8,),
-//               Text(
-//                 'bodyStrikethrough - used on completed children in the project view',
-//                 style: AppTypography.bodyStrikethrough,
-//               ),
-//             ],
-//           ),
-//       ),
-//     );
-//   }
-// }
-
-
-
-//
-// class _ColorPaletteScreen extends StatelessWidget {
-//   const _ColorPaletteScreen();
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     final List<_Swatch> swatches = <_Swatch>[
-//       const _Swatch('brand.primary', AppColors.brandPrimary, AppColors.surfacePrimary),
-//       const _Swatch('brand.dark', AppColors.brandDark, AppColors.surfacePrimary),
-//       const _Swatch('brand.light', AppColors.brandLight, AppColors.textPrimary),
-//       const _Swatch('surface.primary', AppColors.surfacePrimary, AppColors.textPrimary),
-//       const _Swatch('surface.secondary', AppColors.surfaceSecondary, AppColors.textPrimary),
-//       const _Swatch('surface.tertiary', AppColors.surfaceTertiary, AppColors.textPrimary),
-//       const _Swatch('text.primary', AppColors.textPrimary, AppColors.surfacePrimary),
-//       const _Swatch('text.secondary', AppColors.textSecondary, AppColors.surfacePrimary),
-//       const _Swatch('text.tertiary', AppColors.textTertiary, AppColors.surfacePrimary),
-//       const _Swatch('border.default', AppColors.borderDefault, AppColors.textPrimary),
-//       const _Swatch('border.strong', AppColors.borderStrong, AppColors.textPrimary),
-//       const _Swatch('temp.hot', AppColors.tempHot, AppColors.surfacePrimary),
-//       const _Swatch('temp.warm', AppColors.tempWarm, AppColors.surfacePrimary),
-//       const _Swatch('temp.cool', AppColors.tempCool, AppColors.surfacePrimary),
-//       const _Swatch('attention.coral.bg', AppColors.attentionCoralBackground, AppColors.attentionCoralForeground),
-//       const _Swatch('attention.amber.bg', AppColors.attentionAmberBackground, AppColors.attentionAmberForeground)
-//     ];
-//
-//     return Scaffold(
-//       backgroundColor: AppColors.surfacePrimary,
-//       appBar: AppBar(
-//         title: const Text('Color tokens'),
-//         backgroundColor: AppColors.surfacePrimary,
-//         foregroundColor: AppColors.textPrimary,
-//         elevation: 0,
-//       ),
-//       body: ListView.separated(
-//         padding: const EdgeInsets.all(16),
-//         itemCount: swatches.length,
-//         separatorBuilder: (_,__) => const SizedBox(height: 8,),
-//         itemBuilder: (BuildContext context, int index) {
-//           final _Swatch s =swatches[index];
-//           return Container(
-//             height: 56,
-//             padding: const EdgeInsets.symmetric(horizontal: 16),
-//             decoration: BoxDecoration(
-//               color: s.color,
-//               borderRadius:  BorderRadius.circular(10),
-//               border: Border.all(color: AppColors.borderDefault, width: 0.5),
-//             ),
-//             alignment: Alignment.centerLeft,
-//             child: Text(
-//               s.label,
-//               style: TextStyle(
-//                 color: s.textOn,
-//                 fontWeight: FontWeight.w500
-//               ),
-//             ),
-//           );
-//         },
-//     ),
-//     );
-//   }
-// }
-//
-//
-//
-//
-//
-// class _Swatch {
-//   const _Swatch(this.label, this.color, this.textOn);
-//   final String label;
-//   final Color color;
-//   final Color textOn;
-// }
-
-// class _BootStrapScreen extends StatelessWidget {
-//   const _BootStrapScreen();
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return const Scaffold(
-//       body: SafeArea(
-//           child: Center(
-//             child: Column(
-//               mainAxisAlignment: MainAxisAlignment.center,
-//               children: <Widget>[
-//                 Text(
-//                   'Aurganize Lyf',
-//                   style: TextStyle(fontSize: 28, fontWeight: FontWeight.w500),
-//                 ),
-//                 SizedBox(height: 8),
-//                 Text(
-//                   'Bootstrap Ok.',
-//                   style: TextStyle(fontSize: 14, color: Color(0xFF6B6B6B)),
-//                 ),
-//               ],
-//             ),
-//           ),
-//       ),
-//     );
-//   }
-// }
 
 class _TemperatureDotsRow extends StatelessWidget {
   const _TemperatureDotsRow();
@@ -697,6 +492,220 @@ class _LabeledDot extends StatelessWidget {
         const SizedBox(height: 8),
         Text(label, style: AppTypography.caption),
       ],
+    );
+  }
+}
+
+
+
+class _CurrentUserIdDisplay extends ConsumerWidget {
+  const _CurrentUserIdDisplay();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AsyncValue<String> asyncId = ref.watch(currentUserIdProvider);
+    return asyncId.when(
+      loading: () => const Text('Resolving user…',
+          style: TextStyle(color: AppColors.textTertiary)),
+      error: (Object error, StackTrace stack) => Text(
+        'Failed: $error',
+        style: AppTypography.body.copyWith(color: AppColors.tempHot),
+      ),
+      data: (String id) => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text('User id', style: AppTypography.caption),
+          const SizedBox(height: 4),
+          SelectableText(id, style: AppTypography.body),
+        ],
+      ),
+    );
+  }
+}
+
+class _CaptureDevSection extends ConsumerStatefulWidget {
+  const _CaptureDevSection();
+
+  @override
+  ConsumerState<_CaptureDevSection> createState() => _CaptureDevSectionState();
+}
+
+class _CaptureDevSectionState extends ConsumerState<_CaptureDevSection> {
+  final TextEditingController _controller = TextEditingController(
+    text: 'pick up dry cleaning before friday and call mom sometime',
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final pending = ref.watch(pendingCardsProvider);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        TextField(
+          controller: _controller,
+          minLines: 1,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            hintText: 'Type a capture...',
+          ),
+          style: AppTypography.body,
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: <Widget>[
+            FilledButton(
+              onPressed: () async {
+                try {
+                  await ref
+                      .read(captureControllerProvider.notifier)
+                      .submit(
+                    rawText: _controller.text,
+                    source: CaptureSource.typed,
+                  );
+                  if (mounted) _controller.clear();
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Capture failed: $e')),
+                    );
+                  }
+                }
+              },
+              child: const Text('Submit'),
+            ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.md),
+        Text('Pending cards', style: AppTypography.eyebrow),
+        const SizedBox(height: AppSpacing.sm),
+        pending.when(
+          loading: () => const Text('Listening…',
+              style: TextStyle(color: AppColors.textTertiary)),
+          error: (Object e, _) => Text('Error: $e',
+              style: AppTypography.body.copyWith(color: AppColors.tempHot)),
+          data: (List<PendingCard> cards) {
+            if (cards.isEmpty) {
+              return const Text('No pending cards.',
+                  style: TextStyle(color: AppColors.textTertiary));
+            }
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                for (final PendingCard c in cards.take(5))
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 4),
+                    child: Text(
+                      '• ${c.planItem.title} '
+                          '(${c.planItem.type.name}, ${c.planItem.temperature.name})',
+                      style: AppTypography.body,
+                    ),
+                  ),
+                if (cards.length > 5)
+                  Text('+${cards.length - 5} more',
+                      style: AppTypography.bodyMuted),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _LiveDateTrain extends ConsumerWidget {
+  const _LiveDateTrain();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final entries = ref.watch(dateTrainEntriesProvider);
+    return entries.when(
+      loading: () => const SizedBox(
+        height: 60,
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (Object e, _) => Text('Error: $e',
+          style: AppTypography.body.copyWith(color: AppColors.tempHot)),
+      data: (List<DateTrainEntry> e) => DateTrain(
+        entries: e,
+        onTap: (DateTime date) {
+          ref
+              .read(selectedDayProvider.notifier)
+              .select(date.utcDayBucket);
+        },
+      ),
+    );
+  }
+}
+
+class _DispositionDevSection extends ConsumerWidget {
+  const _DispositionDevSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Watch the toast so we can show snackbars when it fires.
+    ref.listen<DispositionToast?>(
+      dispositionToastsProvider,
+          (DispositionToast? prev, DispositionToast? curr) {
+        if (curr == null || curr == prev) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(curr.message)),
+        );
+        ref.read(dispositionToastsProvider.notifier).clear();
+      },
+    );
+
+    final pending = ref.watch(pendingCardsProvider);
+    return pending.when(
+      loading: () => const Text('Loading…'),
+      error: (Object e, _) => Text('Error: $e',
+          style: AppTypography.body.copyWith(color: AppColors.tempHot)),
+      data: (List<PendingCard> cards) {
+        if (cards.isEmpty) {
+          return const Text(
+            'No pending items. Submit a capture above first.',
+            style: TextStyle(color: AppColors.textTertiary),
+          );
+        }
+        final PendingCard first = cards.first;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            Text(
+              'First pending item: ${first.planItem.title}',
+              style: AppTypography.body,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            FilledButton(
+              onPressed: () async {
+                final question = ref
+                    .read(questionRotatorProvider.notifier)
+                    .questionFor(first.planItem.title);
+                final DispositionAction? choice =
+                await showDispositionSheet(
+                  context: context,
+                  question: question,
+                );
+                if (choice == null) return;
+                await ref
+                    .read(dispositionControllerProvider.notifier)
+                    .dispose(
+                  planItemId: first.planItem.id,
+                  action: choice,
+                  prompted: true,
+                );
+              },
+              child: const Text('Disposition the first pending item'),
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 80" fill="none">
+    <!-- Bottom stone -->
+    <ellipse cx="32" cy="64" rx="26" ry="10" fill="#0F6E56"/>
+    <!-- Middle stone -->
+    <ellipse cx="32" cy="42" rx="20" ry="8" fill="#0A4D3C"/>
+    <!-- Upper stone -->
+    <ellipse cx="32" cy="24" rx="14" ry="6" fill="#0F6E56"/>
+    <!-- Top stone -->
+    <ellipse cx="32" cy="11" rx="8" ry="4" fill="#0A4D3C"/>
+</svg>
