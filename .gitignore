@@ -59,3 +59,5 @@ Thumbs.db
 **/*.config.dart
 
 ios/Podfile
+/ios/Podfile.lock
+/android/build/reports/problems/problems-report.html
