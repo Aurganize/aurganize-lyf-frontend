@@ -4,7 +4,9 @@ import 'package:aurganize_lyf/features/landing/widgets/landing_app_header.dart';
 import 'package:aurganize_lyf/features/landing/widgets/peek_card_stack.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../core/extensions/datetime_extensions.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
@@ -94,10 +96,20 @@ class LandingScreen extends ConsumerWidget {
                         data: (List<DateTrainEntry> e) => DateTrain(
                           entries: e,
                           onTap: (DateTime date) {
-                            ref
-                                .read(selectedDayProvider.notifier)
-                                .select(date.toUtc().millisecondsSinceEpoch ~/
-                                Duration.millisecondsPerDay);
+                            final int bucket = date.utcDayBucket;
+                            final int today = DayBucket.today();
+                            if (bucket < today) {
+                              // Past-day tap → leftover view.
+                              GoRouter.of(context).pushNamed(
+                                'leftover',
+                                pathParameters: <String, String>{
+                                  'bucket': bucket.toString(),
+                                },
+                              );
+                            } else {
+                              // Today / future tap → swap focus.
+                              ref.read(selectedDayProvider.notifier).select(bucket);
+                            }
                           },
                         ),
                       ),
