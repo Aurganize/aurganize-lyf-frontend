@@ -294,6 +294,36 @@ class DriftPlanItemRepository implements PlanItemRepository {
     return latest != null;
   }
 
+  @override
+  Future<int> bulkSkip({
+    required List<String> planItemIds,
+    required bool prompted,
+  }) async {
+    return _db.transaction<int>(() async {
+      int count = 0;
+      final DateTime now = DateTime.now().toUtc();
+      for (int i = 0; i < planItemIds.length; i++) {
+        final String id = planItemIds[i];
+        final PlanItemState prior = await currentStateFor(id);
+        // Skipping a terminal item is a no-op semantically; the
+        // engagement still counts.
+        await recordDisposition(
+          event: DispositionEvent(
+            id: _uuid.v4(),
+            planItemId: id,
+            priorState: prior,
+            newState: PlanItemState.skipped,
+            prompted: prompted,
+            // Distinct timestamps so the audit log sorts deterministically.
+            occurredAt: now.add(Duration(milliseconds: i)),
+          ),
+        );
+        count++;
+      }
+      return count;
+    });
+  }
+
 }
 
 /// Internal mutable scaffold for tree assembly. Discarded after [_freeze].

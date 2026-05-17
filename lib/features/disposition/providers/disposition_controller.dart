@@ -54,6 +54,10 @@ class DispositionController extends _$DispositionController {
       PlanItemState.rescheduled,
       DateTime.now().toUtc().add(const Duration(days: 1)),
       ),
+      DispositionAction.pushToToday => (
+      PlanItemState.rescheduled,
+      DateTime.now().toUtc(),
+      ),
       DispositionAction.skipIt => (PlanItemState.skipped, null),
     };
 
@@ -74,6 +78,26 @@ class DispositionController extends _$DispositionController {
     } on StateError catch (error, stack) {
       // Stale prior state — the item changed under us.
       _log.warning('stale disposition for $planItemId', error, stack);
+      rethrow;
+    }
+  }
+
+  Future<int> bulkSkip(List<String> planItemIds) async {
+    final PlanItemRepository repo = ref.read(planItemRepositoryProvider);
+    try {
+      final int count = await repo.bulkSkip(
+        planItemIds: planItemIds,
+        prompted: true,
+      );
+      if (count > 0) {
+        // Single toast for the whole bulk action.
+        ref.read(dispositionToastsProvider.notifier).emit(
+          DispositionAction.skipIt,
+        );
+      }
+      return count;
+    } on StateError catch (error, stack) {
+      _log.warning('bulk-skip rejected', error, stack);
       rethrow;
     }
   }

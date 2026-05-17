@@ -110,4 +110,16 @@ abstract interface class PlanItemRepository {
   /// True if at least one disposition event has been recorded for
   /// [planItemId]. Used by the pending-cards filter.
   Future<bool> hasAnyDisposition(String planItemId);
+
+  /// Append a [DispositionEvent.newState] = [PlanItemState.skipped]
+  /// event for every plan item in [planItemIds]. Each event's
+  /// `priorState` is computed from the repository's
+  /// `currentStateFor`. All writes happen in one transaction; if any
+  /// fails (e.g. stale state), the whole batch rolls back.
+  ///
+  /// Returns the number of items skipped.
+  Future<int> bulkSkip({
+    required List<String> planItemIds,
+    required bool prompted,
+  });
 }

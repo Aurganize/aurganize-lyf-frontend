@@ -52,10 +52,6 @@ Future<PlanItem?> planItemById(
 ///
 /// This is what the floating island's "N cards ready" binds to, and
 /// what the peek-card stack on the landing screen renders.
-///
-/// Implemented by streaming the user's recent intentions and
-/// filtering. For v1.0 the volume is small (a user's recent N captures);
-/// we re-evaluate if usage forces it.
 @riverpod
 Stream<List<PendingCard>> pendingCards(PendingCardsRef ref) async* {
   final String userId = await ref.watch(currentUserIdProvider.future);
@@ -63,7 +59,15 @@ Stream<List<PendingCard>> pendingCards(PendingCardsRef ref) async* {
   ref.watch(intentionRepositoryProvider);
   final PlanItemRepository planRepo = ref.watch(planItemRepositoryProvider);
 
-  while (true) {
+  // We want to re-run the logic whenever either intentions or plan items
+  // change. For v1.0, we poll every second for simplicity, but we can
+  // also watch the database for changes.
+  // By watching a simple periodic stream, we ensure we eventually catch up.
+  // Manual invalidation from CardActionService makes it feel instant.
+  final Stream<int> ticks =
+  Stream<int>.periodic(const Duration(seconds: 1), (int i) => i);
+
+  await for (final _ in ticks) {
     final List<Intention> recent =
     await intentionRepo.findRecentForUser(userId, limit: 30);
     final List<PendingCard> cards = <PendingCard>[];
@@ -80,7 +84,6 @@ Stream<List<PendingCard>> pendingCards(PendingCardsRef ref) async* {
     }
 
     yield cards;
-    await Future<void>.delayed(const Duration(seconds: 1));
   }
 }
 

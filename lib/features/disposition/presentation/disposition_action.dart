@@ -19,6 +19,10 @@ enum DispositionAction {
   /// returns to planned with updated timing.
   pushToTomorrow,
 
+  /// Move a leftover item from its original day to today's plan.
+  /// Only ever used from the leftover view.
+  pushToToday,
+
   /// "Skip it — no penalty." Terminal, but specifically not scored.
   skipIt,
 }
@@ -30,6 +34,7 @@ extension DispositionActionMeta on DispositionAction {
       DispositionAction.done => PlanItemState.done,
       DispositionAction.onIt => PlanItemState.inProgress,
       DispositionAction.pushToTomorrow => PlanItemState.rescheduled,
+      DispositionAction.pushToToday => PlanItemState.rescheduled,
       DispositionAction.skipIt => PlanItemState.skipped,
     };
   }

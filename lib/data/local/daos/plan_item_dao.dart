@@ -45,6 +45,8 @@ class PlanItemDao extends DatabaseAccessor<AurganizeDatabase>
   /// All scored plan items scheduled for [bucket] (a UTC day), excluding
   /// any whose latest disposition is a terminal state ([done] / [skipped]).
   ///
+  /// Includes untimed items ONLY if the item is confirmed.
+  ///
   /// "Latest disposition" is derived by joining against the disposition
   /// events table with a per-item correlated subquery.
   Stream<List<PlanItemRow>> watchForDay({
@@ -59,7 +61,7 @@ class PlanItemDao extends DatabaseAccessor<AurganizeDatabase>
       r'''
       SELECT pi.* FROM plan_items pi
       WHERE pi.user_id = ?1
-        AND pi.scheduled_for_day = ?2
+        AND (pi.scheduled_for_day = ?2 OR (pi.scheduled_for_day IS NULL AND pi.confirmed = 1))
         AND NOT EXISTS (
           SELECT 1 FROM disposition_events de
           WHERE de.plan_item_id = pi.id

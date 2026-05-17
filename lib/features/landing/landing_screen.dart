@@ -138,13 +138,11 @@ class LandingScreen extends ConsumerWidget {
                         return PeekCardStack(
                           cards: cards,
                           onOpen: (PendingCard card) {
-                            // Phase 05 Part 05 wires this to /confirm/:planItemId.
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Open confirmation for ${card.planItem.title}',
-                                ),
-                              ),
+                            GoRouter.of(context).pushNamed(
+                              'confirm',
+                              pathParameters: <String, String>{
+                                'planItemId': card.planItem.id,
+                              },
                             );
                           },
                         );

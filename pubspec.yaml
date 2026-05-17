@@ -54,6 +54,8 @@ dependencies:
   logging: ^1.2.0
   cupertino_icons: ^1.0.8
 
+  share_plus: ^10.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

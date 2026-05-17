@@ -40,6 +40,7 @@ class DispositionToasts extends _$DispositionToasts {
       DispositionAction.done => 'Marked done',
       DispositionAction.onIt => "On it — we'll keep nudging",
       DispositionAction.pushToTomorrow => 'Returned to plan for tomorrow',
+      DispositionAction.pushToToday => 'Moved to today\'s plan',
       DispositionAction.skipIt => 'Skipped — streak intact',
     };
     state = DispositionToast(

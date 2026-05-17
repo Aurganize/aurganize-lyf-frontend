@@ -7,6 +7,7 @@ import '../../../data/local/database_provider.dart';
 import '../../../data/repositories/repository_providers.dart';
 import '../../../domain/repositories/intention_repository.dart';
 import '../../../domain/repositories/plan_item_repository.dart';
+import '../providers/capture_providers.dart';
 
 part 'card_action_service.g.dart';
 
@@ -23,6 +24,7 @@ CardActionService cardActionService(CardActionServiceRef ref) {
     db: ref.watch(databaseProvider),
     intentionRepo: ref.watch(intentionRepositoryProvider),
     planRepo: ref.watch(planItemRepositoryProvider),
+    ref: ref,
   );
 }
 
@@ -31,13 +33,16 @@ class CardActionService {
     required AurganizeDatabase db,
     required IntentionRepository intentionRepo,
     required PlanItemRepository planRepo,
+    required CardActionServiceRef ref,
   })  : _db = db,
         _intentionRepo = intentionRepo,
-        _planRepo = planRepo;
+        _planRepo = planRepo,
+        _ref = ref;
 
   final AurganizeDatabase _db;
   final IntentionRepository _intentionRepo;
   final PlanItemRepository _planRepo;
+  final CardActionServiceRef _ref;
 
   static final Logger _log = appLogger('CardActionService');
 
@@ -46,6 +51,10 @@ class CardActionService {
   Future<void> confirm({required String planItemId}) async {
     await _planRepo.markConfirmed(planItemId);
     _log.info('confirmed plan item $planItemId');
+
+    // Invalidate the pending cards stream so the UI responds immediately
+    // rather than waiting for the next poll.
+    _ref.invalidate(pendingCardsProvider);
   }
 
   /// Rejects the card.
@@ -77,5 +86,7 @@ class CardActionService {
         );
       }
     });
+
+    _ref.invalidate(pendingCardsProvider);
   }
 }

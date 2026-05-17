@@ -23,7 +23,9 @@ import '../../features/capture/services/card_action_service.dart';
 import '../../features/capture/providers/capture_providers.dart';
 import '../../features/disposition/presentation/dispose_from_ui.dart';
 import '../../features/disposition/presentation/disposition_action.dart';
+import '../../features/plan/presentation/leftover_screen.dart';
 import '../../features/plan/presentation/project_screen.dart';
+import '../../features/settings/presentation/setting_screen.dart';
 import '../../shared/widgets/confirmation_detail_view.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -148,6 +150,7 @@ class _ConfirmDetailContent extends ConsumerWidget {
         // ... same body as before — Phase 06 Part 01 ...
         switch (attr.key) {
           case 'type':
+            debugPrint('Opening type picker');
             final PlanItemType? next = await showTypePicker(
               context: context,
               currentType: card.planItem.type,
@@ -157,6 +160,7 @@ class _ConfirmDetailContent extends ConsumerWidget {
                   .read(planItemMutationsProvider.notifier)
                   .updateType(card.planItem.id, next);
             }
+            debugPrint('Picket returned $next');
             break;
           case 'time':
             final ItemTime? next = await showTimeEditor(
@@ -290,12 +294,7 @@ class LeftoverRouteScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final DateTime date = DayBucket.asDateTime(dayBucket);
-    return _ScreenWithMessage(
-      title: 'Leftover',
-      message:
-      'Leftover view for ${date.year}-${date.month}-${date.day} — Phase 06 Part 04',
-    );
+    return LeftoverScreen(dayBucket: dayBucket);
   }
 }
 
@@ -308,13 +307,9 @@ class SettingsRouteScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const _ScreenWithMessage(
-      title: 'Settings',
-      message: 'Settings — Phase 06 Part 05',
-    );
+    return const SettingsScreen();
   }
 }
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared stub chrome
 // ─────────────────────────────────────────────────────────────────────────────

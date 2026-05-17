@@ -130,6 +130,8 @@ abstract final class AppColors {
   /// at the start of a disposition button row).
   static const Color iconBrand = brandPrimary;
 
+  static const Color iconDisabled = textTertiary;
+
   /// Background of an editable-but-tentative confidence chip (dashed border, no fill).
   static const Color chipTentativeBackground = Color(0x00000000); // transparent
   static const Color chipTentativeBorder = borderStrong;
