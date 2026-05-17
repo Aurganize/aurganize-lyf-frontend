@@ -6,7 +6,17 @@ import '../../core/extensions/datetime_extensions.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../domain/enums/plan_item_type.dart';
+import '../../domain/enums/temperature.dart';
+import '../../domain/models/item_time.dart';
+import '../../features/capture/presentation/editors/show_parent_picker.dart';
+import '../../features/capture/presentation/editors/show_recurrence_editor.dart';
+import '../../features/capture/presentation/editors/show_temperature_picker.dart';
+import '../../features/capture/presentation/editors/show_time_editor.dart';
+import '../../features/capture/presentation/editors/show_title_editor.dart';
+import '../../features/capture/presentation/editors/show_type_picker.dart';
 import '../../features/capture/presentation/parsed_card_view_model.dart';
+import '../../features/capture/providers/plan_item_mutations.dart';
 import '../../features/capture/services/card_action_service.dart';
 import '../../features/capture/providers/capture_providers.dart';
 import '../../features/disposition/presentation/disposition_action.dart';
@@ -47,17 +57,75 @@ class ConfirmRouteScreen extends ConsumerWidget {
           );
         }
         return ConfirmationDetailView(
-          viewModel: _viewModelFor(card),
+          viewModel: ParsedCardViewModelFactory.fromDomain(
+            item: card.planItem,
+            rawText: card.intention.rawText,
+          ),
           onClose: () => GoRouter.of(context).pop(),
-          onEditTitle: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Title editor — Phase 06')),
+          onEditTitle: () async {
+            final String? newTitle = await showTitleEditor(
+              context: context,
+              currentTitle: card.planItem.title,
             );
+            if (newTitle != null) {
+              await ref
+                  .read(planItemMutationsProvider.notifier)
+                  .updateTitle(card.planItem.id, newTitle);
+            }
           },
-          onEditAttribute: (ParsedAttribute _) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Attribute editor — Phase 06')),
-            );
+          onEditAttribute: (ParsedAttribute attr) async {
+            switch (attr.key) {
+              case 'type':
+                final PlanItemType? next = await showTypePicker(
+                  context: context,
+                  currentType: card.planItem.type,
+                );
+                if (next != null) {
+                  await ref
+                      .read(planItemMutationsProvider.notifier)
+                      .updateType(card.planItem.id, next);
+                }
+              case 'time':
+                final ItemTime? next = await showTimeEditor(
+                  context: context,
+                  currentTime: card.planItem.time,
+                );
+                if (next != null) {
+                  await ref
+                      .read(planItemMutationsProvider.notifier)
+                      .updateTime(card.planItem.id, next);
+                }
+              case 'recurrence':
+                final ItemTime? next = await showRecurrenceEditor(
+                  context: context,
+                  currentTime: card.planItem.time,
+                );
+                if (next != null) {
+                  await ref
+                      .read(planItemMutationsProvider.notifier)
+                      .updateTime(card.planItem.id, next);
+                }
+              case 'parent':
+                final result = await showParentPicker(
+                  context: context,
+                  excludeIds: <String>{card.planItem.id},
+                );
+                if (result != null && result.changed) {
+                  await ref
+                      .read(planItemMutationsProvider.notifier)
+                      .updateParent(card.planItem.id, result.newParent?.id);
+                }
+              case 'temperature':
+                final Temperature? next = await showTemperaturePicker(
+                  context: context,
+                  currentTemperature: card.planItem.temperature,
+                );
+                if (next != null) {
+                  await ref
+                      .read(planItemMutationsProvider.notifier)
+                      .updateTemperature(card.planItem.id, next);
+                }
+            }
           },
           onConfirm: () async {
             await ref.read(cardActionServiceProvider).confirm(
@@ -90,21 +158,21 @@ extension _FirstWhereOrNull<E> on Iterable<E> {
   }
 }
 
-ParsedCardViewModel _viewModelFor(PendingCard card) {
-  // Same adaption as in peek_card_stack.dart. Both files share this
-  // shape; in Phase 06 Part 01 we'll extract it into a single
-  // ParsedCardViewModel.fromDomain() factory.
-  return ParsedCardViewModel(
-    planItemId: card.planItem.id,
-    rawText: card.intention.rawText,
-    title: card.planItem.title,
-    titleConfidence: card.planItem.confidenceFor('title'),
-    attributes: const <ParsedAttribute>[],
-    // Empty for the stub — Phase 06 Part 01 fleshes out the
-    // attributes for the detail view. The peek-card stack already
-    // does this for its own purposes; we duplicate here only briefly.
-  );
-}
+// ParsedCardViewModel _viewModelFor(PendingCard card) {
+//   // Same adaption as in peek_card_stack.dart. Both files share this
+//   // shape; in Phase 06 Part 01 we'll extract it into a single
+//   // ParsedCardViewModel.fromDomain() factory.
+//   return ParsedCardViewModel(
+//     planItemId: card.planItem.id,
+//     rawText: card.intention.rawText,
+//     title: card.planItem.title,
+//     titleConfidence: card.planItem.confidenceFor('title'),
+//     attributes: const <ParsedAttribute>[],
+//     // Empty for the stub — Phase 06 Part 01 fleshes out the
+//     // attributes for the detail view. The peek-card stack already
+//     // does this for its own purposes; we duplicate here only briefly.
+//   );
+// }
 
 // ─────────────────────────────────────────────────────────────────────────────
 // /plan/:rootId — project view stub

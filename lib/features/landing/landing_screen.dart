@@ -232,20 +232,18 @@ class _ConversationPanelPlaceholder extends StatelessWidget {
             ),
           ),
           // Placeholder input bar so the bottom edge is visually anchored.
-          Container(
-            height: 44,
-            decoration: const BoxDecoration(
-              color: AppColors.surfaceTertiary,
-              borderRadius: AppSpacing.borderRadiusPill,
-            ),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  '(typing area)',
-                  style: TextStyle(color: AppColors.textTertiary),
-                ),
+          const TextField(
+            decoration: InputDecoration(
+              hintText: 'Type a message...',
+              filled: true,
+              fillColor: AppColors.surfaceTertiary,
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: 12,
+              ),
+              border: OutlineInputBorder(
+                borderRadius: AppSpacing.borderRadiusPill,
+                borderSide: BorderSide.none,
               ),
             ),
           ),

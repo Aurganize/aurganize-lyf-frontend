@@ -144,35 +144,9 @@ class _PositionedPeek extends StatelessWidget {
 /// Adapts a [PendingCard] into the presentational [ParsedCardViewModel]
 /// the peek widget expects. Pulled out so it's testable in isolation.
 ParsedCardViewModel _viewModelFor(PendingCard card) {
-  final PlanItem item = card.planItem;
-  return ParsedCardViewModel(
-    planItemId: item.id,
+  return ParsedCardViewModelFactory.fromDomain(
+    item: card.planItem,
     rawText: card.intention.rawText,
-    title: item.title,
-    titleConfidence: item.confidenceFor('title'),
-    attributes: <ParsedAttribute>[
-      ParsedAttribute(
-        key: 'type',
-        label: 'Type',
-        displayValue: _typeLabel(item.type),
-        confidence: item.confidenceFor('type'),
-        icon: _typeIcon(item.type),
-      ),
-      ParsedAttribute(
-        key: 'time',
-        label: 'When',
-        displayValue: _timeLabel(item.time),
-        confidence: item.confidenceFor('time'),
-        icon: Icons.calendar_today_outlined,
-      ),
-      ParsedAttribute(
-        key: 'temperature',
-        label: 'Temperature',
-        displayValue: _temperatureLabel(item.temperature),
-        confidence: item.confidenceFor('temperature'),
-        icon: Icons.thermostat_outlined,
-      ),
-    ],
   );
 }
 

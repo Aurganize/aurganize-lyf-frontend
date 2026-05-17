@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../../domain/enums/plan_item_type.dart';
+import '../../../domain/enums/temperature.dart';
 import '../../../domain/models/confidence.dart';
+import '../../../domain/models/item_time.dart';
 import '../../../domain/models/plan_item.dart';
 
 /// Presentational shape for a parsed card.
@@ -84,3 +87,131 @@ class ParsedAttribute {
 // The reason for the dance: ParsedAttribute may eventually be
 // serialized to/from a remote API; keeping the code-point as int
 // keeps the model JSON-safe.
+
+
+extension ParsedCardViewModelFactory on ParsedCardViewModel {
+  /// Build a presentational view model from a domain [PlanItem] plus
+  /// its source [rawText].
+  ///
+  /// The factory encodes ALL the type-to-label, type-to-icon,
+  /// time-to-label, and temperature-to-label mappings. Both the peek
+  /// card and the detail view call this; they never invent their own.
+  static ParsedCardViewModel fromDomain({
+    required PlanItem item,
+    required String rawText,
+  }) {
+    return ParsedCardViewModel(
+      planItemId: item.id,
+      rawText: rawText,
+      title: item.title,
+      titleConfidence: item.confidenceFor('title'),
+      attributes: <ParsedAttribute>[
+        ParsedAttribute(
+          key: 'type',
+          label: 'Type',
+          displayValue: _typeLabel(item.type),
+          confidence: item.confidenceFor('type'),
+          icon: _typeIcon(item.type),
+        ),
+        ParsedAttribute(
+          key: 'time',
+          label: 'When',
+          displayValue: _timeLabel(item.time),
+          confidence: item.confidenceFor('time'),
+          icon: Icons.calendar_today_outlined,
+        ),
+        ParsedAttribute(
+          key: 'recurrence',
+          label: 'Recurrence',
+          displayValue: _recurrenceLabel(item.time),
+          confidence: item.confidenceFor('time'), // shares time confidence
+          icon: Icons.refresh,
+        ),
+        ParsedAttribute(
+          key: 'parent',
+          label: 'Parent',
+          displayValue: item.parentId == null ? 'No parent' : 'Linked',
+          confidence: item.confidenceFor('parent'),
+          icon: Icons.account_tree_outlined,
+        ),
+        ParsedAttribute(
+          key: 'temperature',
+          label: 'Temperature',
+          displayValue: _temperatureLabel(item.temperature),
+          confidence: item.confidenceFor('temperature'),
+          icon: Icons.thermostat_outlined,
+        ),
+      ],
+    );
+  }
+}
+
+// ── label/icon helpers ─────────────────────────────────────────────────────
+
+String _typeLabel(PlanItemType t) {
+  return switch (t) {
+    PlanItemType.task => 'Task',
+    PlanItemType.errand => 'Errand',
+    PlanItemType.call => 'Call',
+    PlanItemType.appointment => 'Appointment',
+    PlanItemType.medication => 'Medication',
+    PlanItemType.note => 'Note',
+    PlanItemType.project => 'Project',
+    PlanItemType.unknown => 'Untyped',
+  };
+}
+
+IconData _typeIcon(PlanItemType t) {
+  return switch (t) {
+    PlanItemType.task => Icons.check_box_outline_blank,
+    PlanItemType.errand => Icons.shopping_bag_outlined,
+    PlanItemType.call => Icons.phone_outlined,
+    PlanItemType.appointment => Icons.event_outlined,
+    PlanItemType.medication => Icons.medical_services_outlined,
+    PlanItemType.note => Icons.sticky_note_2_outlined,
+    PlanItemType.project => Icons.account_tree_outlined,
+    PlanItemType.unknown => Icons.help_outline,
+  };
+}
+
+String _timeLabel(ItemTime t) {
+  return t.when<String>(
+    hardTime: (DateTime at, _) {
+      final DateTime local = at.toLocal();
+      return '${_pad(local.hour)}:${_pad(local.minute)} on '
+          '${local.month}/${local.day}';
+    },
+    timeWindow: (DateTime? from, DateTime until) {
+      final DateTime u = until.toLocal();
+      return 'By ${u.month}/${u.day}';
+    },
+    recurring: (_, __, ___) => 'Recurring',
+    untimed: () => 'No specific time',
+  );
+}
+
+String _recurrenceLabel(ItemTime t) {
+  return t.when<String>(
+    hardTime: (_, __) => 'One-off',
+    timeWindow: (_, __) => 'One-off',
+    recurring: (String rrule, _, __) {
+      if (rrule == 'FREQ=DAILY') return 'Daily';
+      if (rrule.startsWith('FREQ=WEEKLY;BYDAY=')) {
+        return 'Weekly on a fixed day';
+      }
+      if (rrule == 'FREQ=WEEKLY') return 'Weekly';
+      return 'Custom recurrence';
+    },
+    untimed: () => 'One-off',
+  );
+}
+
+String _temperatureLabel(Temperature t) {
+  return switch (t) {
+    Temperature.hot => 'Hot',
+    Temperature.warm => 'Warm',
+    Temperature.cool => 'Cool',
+  };
+}
+
+String _pad(int n) => n.toString().padLeft(2, '0');
