@@ -1,3 +1,5 @@
+import 'package:aurganize_lyf/app/app.dart';
+import 'package:aurganize_lyf/features/landing/widgets/conversation_stage.dart';
 import 'package:aurganize_lyf/features/landing/widgets/landing_app_header.dart';
 import 'package:aurganize_lyf/features/landing/widgets/peek_card_stack.dart';
 import 'package:flutter/material.dart';
@@ -65,89 +67,92 @@ class LandingScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.surfacePrimary,
-      body: SafeArea(
-        bottom: false, // the island handles its own bottom safe area
-        child: Stack(
-          children: <Widget>[
-            // Layered content — header, date train, peek — and an
-            // intentionally large Spacer that lets the canvas breathe.
-            Positioned.fill(
-              child: Column(
-                children: <Widget>[
-                  LandingAppHeader(
-                    streak: 0, // placeholder until Phase 10
-                    onStreakTap: () {
-                      ref
-                          .read(selectedDayProvider.notifier)
-                          .resetToToday();
-                    },
-                    onMenuTap: onOpenSettings,
+      body: ConversationStageShell(
+          panelBody: const _ConversationPanelPlaceholder(),
+          planContent: SafeArea(
+            bottom: false, // the island handles its own bottom safe area
+            child: Stack(
+              children: <Widget>[
+                // Layered content — header, date train, peek — and an
+                // intentionally large Spacer that lets the canvas breathe.
+                Positioned.fill(
+                  child: Column(
+                    children: <Widget>[
+                      LandingAppHeader(
+                        streak: 0, // placeholder until Phase 10
+                        onStreakTap: () {
+                          ref
+                              .read(selectedDayProvider.notifier)
+                              .resetToToday();
+                        },
+                        onMenuTap: onOpenSettings,
+                      ),
+                      trainEntries.when(
+                        loading: () => const _DateTrainSkeleton(),
+                        error: (Object e, _) =>
+                            _DateTrainError(error: e),
+                        data: (List<DateTrainEntry> e) => DateTrain(
+                          entries: e,
+                          onTap: (DateTime date) {
+                            ref
+                                .read(selectedDayProvider.notifier)
+                                .select(date.toUtc().millisecondsSinceEpoch ~/
+                                Duration.millisecondsPerDay);
+                          },
+                        ),
+                      ),
+                      const SizedBox(height: AppSpacing.md),
+                      TodayPeek(
+                        dayBucket: selectedDay,
+                        onRowTap: onOpenPlanItem,
+                      ),
+                      const Spacer(),
+                    ],
                   ),
-                  trainEntries.when(
-                    loading: () => const _DateTrainSkeleton(),
-                    error: (Object e, _) =>
-                        _DateTrainError(error: e),
-                    data: (List<DateTrainEntry> e) => DateTrain(
-                      entries: e,
-                      onTap: (DateTime date) {
-                        ref
-                            .read(selectedDayProvider.notifier)
-                            .select(date.toUtc().millisecondsSinceEpoch ~/
-                            Duration.millisecondsPerDay);
-                      },
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  TodayPeek(
-                    dayBucket: selectedDay,
-                    onRowTap: onOpenPlanItem,
-                  ),
-                  const Spacer(),
-                ],
-              ),
-            ),
+                ),
 
-            // ── Peek stack docked above the island ─────────────────────────────
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: AppSpacing.xxl + AppSpacing.floatingIslandHeight + AppSpacing.lg,
-              child: Consumer(builder: (BuildContext context, WidgetRef ref, _) {
-                final pending = ref.watch(pendingCardsProvider);
-                return pending.maybeWhen(
-                  data: (List<PendingCard> cards) {
-                    if (cards.isEmpty) return const SizedBox.shrink();
-                    return PeekCardStack(
-                      cards: cards,
-                      onOpen: (PendingCard card) {
-                        // Phase 05 Part 05 wires this to /confirm/:planItemId.
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(
-                              'Open confirmation for ${card.planItem.title}',
-                            ),
-                          ),
+                // ── Peek stack docked above the island ─────────────────────────────
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: AppSpacing.xxl + AppSpacing.floatingIslandHeight + AppSpacing.lg,
+                  child: Consumer(builder: (BuildContext context, WidgetRef ref, _) {
+                    final pending = ref.watch(pendingCardsProvider);
+                    return pending.maybeWhen(
+                      data: (List<PendingCard> cards) {
+                        if (cards.isEmpty) return const SizedBox.shrink();
+                        return PeekCardStack(
+                          cards: cards,
+                          onOpen: (PendingCard card) {
+                            // Phase 05 Part 05 wires this to /confirm/:planItemId.
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'Open confirmation for ${card.planItem.title}',
+                                ),
+                              ),
+                            );
+                          },
                         );
                       },
+                      orElse: () => const SizedBox.shrink(),
                     );
-                  },
-                  orElse: () => const SizedBox.shrink(),
-                );
-              }),
-            ),
+                  }),
+                ),
 
-            // The island floats over the canvas.
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: LandingIslandHost(
-                onExpand: onExpandIsland,
-                onVoiceCapture: onVoiceCapture,
-              ),
+                // The island floats over the canvas.
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: LandingIslandHost(
+                    onExpand: onExpandIsland,
+                    onVoiceCapture: onVoiceCapture,
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
       ),
     );
   }
@@ -162,7 +167,7 @@ class _DateTrainSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return const SizedBox(
       height: AppSpacing.dayTileHeight + 8,
       child: Center(
         child: SizedBox(
@@ -187,6 +192,53 @@ class _DateTrainError extends StatelessWidget {
       child: Text(
         'Couldn\'t load the date train. $error',
         style: AppTypography.bodyMuted,
+      ),
+    );
+  }
+}
+
+
+class _ConversationPanelPlaceholder extends StatelessWidget {
+  const _ConversationPanelPlaceholder();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: <Widget>[
+          Text('CONVERSATION', style: AppTypography.eyebrow),
+          const SizedBox(height: AppSpacing.md),
+          Expanded(
+            child: Center(
+              child: Text(
+                'Chat history and input land here in Phase 07.',
+                style: AppTypography.bodyMuted,
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+          // Placeholder input bar so the bottom edge is visually anchored.
+          Container(
+            height: 44,
+            decoration: const BoxDecoration(
+              color: AppColors.surfaceTertiary,
+              borderRadius: AppSpacing.borderRadiusPill,
+            ),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '(typing area)',
+                  style: TextStyle(color: AppColors.textTertiary),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+        ],
       ),
     );
   }

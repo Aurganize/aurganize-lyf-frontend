@@ -35,6 +35,7 @@ import '../features/disposition/providers/disposition_controller.dart';
 import '../features/disposition/providers/disposition_toast.dart';
 import '../features/disposition/providers/question_rotator.dart';
 import '../features/landing/landing_screen.dart';
+import '../features/landing/widgets/conversation_stage.dart';
 import '../features/onboarding/onboarding_providers.dart';
 import '../features/onboarding/onboarding_screen.dart';
 import '../features/plan/providers/date_train_provider.dart';
@@ -68,30 +69,30 @@ class _AurganizeLyfAppState extends ConsumerState<AurganizeLyfApp> {
         loading: () => const _LaunchSplash(),
         error: (Object _, __) => const _LaunchSplash(),
         data: (bool done) => done
-            ? LandingScreen(
-          onOpenPlanItem: (PlanItem item) {
-            // Phase 05 Part 05 wires this to /detail/:id.
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Detail for ${item.title}')),
-            );
-          },
-          onOpenSettings: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Settings — Phase 06')),
-            );
-          },
-          onExpandIsland: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Conversation panel — Phase 07'),
-              ),
-            );
-          },
-          onVoiceCapture: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Voice capture — Phase 07'),
-              ),
+            ? Consumer(
+          builder: (BuildContext context, WidgetRef ref, _) {
+            return LandingScreen(
+              onOpenPlanItem: (PlanItem item) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Detail for ${item.title}')),
+                );
+              },
+              onOpenSettings: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Settings — Phase 06')),
+                );
+              },
+              // Now the island calls into the stage controller.
+              onExpandIsland: () {
+                ref
+                    .read(conversationStageProvider.notifier)
+                    .expand();
+              },
+              onVoiceCapture: () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Voice capture — Phase 07')),
+                );
+              },
             );
           },
         )
@@ -369,3 +370,4 @@ class _DispositionDevSection extends ConsumerWidget {
     );
   }
 }
+
