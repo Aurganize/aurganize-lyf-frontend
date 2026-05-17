@@ -66,5 +66,9 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSMicrophoneUsageDescription</key>
+    <string>Aurganize lyf uses the microphone for voice capture so you can speak captures hands-free.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>Aurganize lyf turns speech into text for captures. Audio is processed by the device or by Apple's speech recognition.</string>
 </dict>
 </plist>

@@ -1,11 +1,16 @@
+import 'dart:async';
+
 import 'package:aurganize_lyf/app/app.dart';
+import 'package:aurganize_lyf/features/landing/widgets/conversation_history.dart';
 import 'package:aurganize_lyf/features/landing/widgets/conversation_input_bar.dart';
 import 'package:aurganize_lyf/features/landing/widgets/conversation_stage.dart';
 import 'package:aurganize_lyf/features/landing/widgets/landing_app_header.dart';
 import 'package:aurganize_lyf/features/landing/widgets/peek_card_stack.dart';
+import 'package:aurganize_lyf/features/landing/widgets/voice_capture_panel.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 import '../../core/extensions/datetime_extensions.dart';
 import '../../core/theme/app_colors.dart';
@@ -16,6 +21,8 @@ import '../../domain/models/plan_item.dart';
 import '../../shared/widgets/date_train.dart';
 import '../capture/providers/capture_controller.dart';
 import '../capture/providers/capture_providers.dart';
+import '../capture/providers/conversation_input.dart';
+import '../capture/services/voice_capture_service.dart';
 import '../disposition/providers/disposition_toast.dart';
 import '../plan/providers/date_train_provider.dart';
 import '../plan/providers/items_for_date_provider.dart';
@@ -73,7 +80,7 @@ class LandingScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.surfacePrimary,
       body: ConversationStageShell(
-          panelBody: const _ConversationPanelPlaceholder(),
+          panelBody: const _ConversationPanelBody(),
           planContent: SafeArea(
             bottom: false, // the island handles its own bottom safe area
             child: Stack(
@@ -210,48 +217,48 @@ class _DateTrainError extends StatelessWidget {
   }
 }
 
-
-class _ConversationPanelPlaceholder extends StatelessWidget {
-  const _ConversationPanelPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        // Chat history area — Phase 07 Part 03 fills this with bubbles.
-        Expanded(
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: Center(
-              child: Text(
-                'Chat history lands here in Phase 07 Part 03.',
-                style: AppTypography.bodyMuted,
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
-        ),
-        // The real input bar — replaces the (typing area) placeholder.
-        ConversationInputBar(
-          autofocus: true,
-          onVoiceCapture: () {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Voice capture — Phase 07 Part 02'),
-              ),
-            );
-          },
-          onError: (Object error) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text("Couldn't save: $error")),
-            );
-          },
-        ),
-      ],
-    );
-  }
-}
+//
+// class _ConversationPanelPlaceholder extends StatelessWidget {
+//   const _ConversationPanelPlaceholder();
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Column(
+//       crossAxisAlignment: CrossAxisAlignment.stretch,
+//       children: <Widget>[
+//         // Chat history area — Phase 07 Part 03 fills this with bubbles.
+//         Expanded(
+//           child: Padding(
+//             padding: const EdgeInsets.all(AppSpacing.lg),
+//             child: Center(
+//               child: Text(
+//                 'Chat history lands here in Phase 07 Part 03.',
+//                 style: AppTypography.bodyMuted,
+//                 textAlign: TextAlign.center,
+//               ),
+//             ),
+//           ),
+//         ),
+//         // The real input bar — replaces the (typing area) placeholder.
+//         ConversationInputBar(
+//           autofocus: true,
+//           onVoiceCapture: () {
+//             ScaffoldMessenger.of(context).showSnackBar(
+//               const SnackBar(
+//                 content: Text('Voice capture — Phase 07 Part 02'),
+//               ),
+//             );
+//           },
+//           onError: (Object error) {
+//             ScaffoldMessenger.of(context).showSnackBar(
+//               SnackBar(content: Text("Couldn't save: $error")),
+//             );
+//           },
+//         ),
+//       ],
+//     );
+//   }
+// }
 
 class _ConversationComposer extends ConsumerStatefulWidget {
   const _ConversationComposer();
@@ -314,6 +321,144 @@ class _ConversationComposerState
           onPressed: _submit,
           icon: const Icon(Icons.send),
         ),
+      ],
+    );
+  }
+}
+
+
+class _ConversationPanelBody extends ConsumerStatefulWidget {
+  const _ConversationPanelBody();
+
+  @override
+  ConsumerState<_ConversationPanelBody> createState() =>
+      _ConversationPanelBodyState();
+}
+
+class _ConversationPanelBodyState
+    extends ConsumerState<_ConversationPanelBody> {
+  StreamSubscription<VoiceResult>? _voiceSub;
+  VoiceResult? _voice;
+
+  bool get _listening => _voice?.state == VoiceState.listening;
+
+  Future<void> _startVoice() async {
+    if (_voiceSub != null) {
+      await _stopVoice();
+      return;
+    }
+    final stream = ref.read(voiceCaptureServiceProvider).start();
+    _voiceSub = stream.listen(_onVoiceResult, onDone: _onVoiceDone);
+  }
+
+  void _onVoiceResult(VoiceResult r) {
+    setState(() => _voice = r);
+    if (r.state == VoiceState.failed) {
+      _handleFailure(r.failure!);
+    } else if (r.state == VoiceState.done) {
+      // Push the final transcript into the draft, give focus to the field.
+      ref
+          .read(conversationInputProvider.notifier)
+          .setDraft(r.text);
+    }
+  }
+
+  void _onVoiceDone() {
+    setState(() {
+      _voiceSub = null;
+      // Hold _voice briefly in `done` state to render the transcript;
+      // cleared on the next setState/build cycle (when the user types
+      // or hits send).
+    });
+  }
+
+  Future<void> _stopVoice() async {
+    await ref.read(voiceCaptureServiceProvider).stop();
+  }
+
+  Future<void> _handleFailure(VoiceFailureReason reason) async {
+    if (!mounted) return;
+    final String message = switch (reason) {
+      VoiceFailureReason.permissionDenied =>
+      'Voice capture needs microphone access.',
+      VoiceFailureReason.permissionPermanentlyDenied =>
+      'Mic access is off for this app. Enable it in Settings.',
+      VoiceFailureReason.unavailable =>
+      'Voice capture isn\'t available on this device.',
+      VoiceFailureReason.recognitionFailed =>
+      'Couldn\'t hear that — try again.',
+      VoiceFailureReason.conflict =>
+      'A new voice session started.',
+    };
+    if (reason == VoiceFailureReason.permissionPermanentlyDenied) {
+      final bool? openSettings = await showDialog<bool>(
+        context: context,
+        builder: (BuildContext _) => AlertDialog(
+          title: const Text('Microphone access is off'),
+          content: const Text(
+            'Aurganize lyf needs microphone access for voice capture. '
+                'You can grant it in your device settings, or keep typing.',
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Keep typing'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Open Settings'),
+            ),
+          ],
+        ),
+      );
+      if (openSettings == true) {
+        await openAppSettings();
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
+    setState(() => _voice = null);
+  }
+
+  @override
+  void dispose() {
+    _voiceSub?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Expanded(
+          child: ConversationHistory(
+            onOpenCard: (String planItemId) {
+              // Routing the same way the peek-card stack does.
+              GoRouter.of(context).pushNamed(
+                'confirm',
+                pathParameters: <String, String>{'planItemId': planItemId},
+              );
+            },
+          ),
+        ),
+        if (_listening)
+          VoiceCapturePanel(
+            transcript: _voice?.text ?? '',
+            onStop: _stopVoice,
+          )
+        else
+          ConversationInputBar(
+            autofocus: true,
+            onVoiceCapture: _startVoice,
+            onError: (Object error) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text("Couldn't save: $error")),
+              );
+            },
+          ),
       ],
     );
   }

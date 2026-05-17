@@ -33,4 +33,11 @@ abstract interface class IntentionRepository {
   /// and disposition event derived from it. Reserved for Settings →
   /// "delete my data".
   Future<void> deleteForever(String id);
+
+  /// Live stream of the user's recent intentions, newest first.
+  /// Emits on every insert/update of any intention belonging to
+  /// [userId]. The [limit] caps the emission size; consumers that
+  /// need pagination must query directly (we don't have a paginated
+  /// consumer in v1.0).
+  Stream<List<Intention>> watchRecentForUser(String userId, {int limit = 50});
 }

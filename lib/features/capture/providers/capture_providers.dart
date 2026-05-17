@@ -59,22 +59,11 @@ Stream<List<PendingCard>> pendingCards(PendingCardsRef ref) async* {
   ref.watch(intentionRepositoryProvider);
   final PlanItemRepository planRepo = ref.watch(planItemRepositoryProvider);
 
-  // We want to re-run the logic whenever either intentions or plan items
-  // change. For v1.0, we poll every second for simplicity, but we can
-  // also watch the database for changes.
-  // By watching a simple periodic stream, we ensure we eventually catch up.
-  // Manual invalidation from CardActionService makes it feel instant.
-  final Stream<int> ticks =
-  Stream<int>.periodic(const Duration(seconds: 1), (int i) => i);
-
-  await for (final _ in ticks) {
-    final List<Intention> recent =
-    await intentionRepo.findRecentForUser(userId, limit: 30);
+  await for (final List<Intention> recent
+  in intentionRepo.watchRecentForUser(userId, limit: 30)) {
     final List<PendingCard> cards = <PendingCard>[];
-
     for (final Intention i in recent) {
       if (i.parseStatus != ParseStatus.parsed) continue;
-
       final List<PlanItem> items = await planRepo.findByIntention(i.id);
       for (final PlanItem item in items) {
         if (item.confirmed) continue;
@@ -82,10 +71,10 @@ Stream<List<PendingCard>> pendingCards(PendingCardsRef ref) async* {
         cards.add(PendingCard(intention: i, planItem: item));
       }
     }
-
     yield cards;
   }
 }
+
 
 /// A peeking-card view model assembled from an intention + plan item.
 class PendingCard {

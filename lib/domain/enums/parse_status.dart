@@ -17,5 +17,5 @@ enum ParseStatus {
 
   /// The user dismissed the parsed result before confirming. The raw
   /// intention remains in history but produced no plan item.
-  dismissed,
+  dismissed, parsing,
 }

@@ -70,4 +70,13 @@ class DriftIntentionRepository implements IntentionRepository {
 
   @override
   Future<void> deleteForever(String id) => _dao.deleteForever(id);
+
+  @override
+  Stream<List<Intention>> watchRecentForUser(String userId, {int limit = 50}) {
+    return _dao
+        .watchRecentForUser(userId, limit: limit)
+        .map<List<Intention>>(
+          (rows) => rows.map((r) => r.toDomain()).toList(growable: false),
+    );
+  }
 }

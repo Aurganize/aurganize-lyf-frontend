@@ -135,4 +135,14 @@ class IntentionDao extends DatabaseAccessor<AurganizeDatabase>
   Future<void> deleteForever(String id) {
     return (delete(intentions)..where((tbl) => tbl.id.equals(id))).go();
   }
+
+  Stream<List<IntentionRow>> watchRecentForUser(String userId, {int limit = 50}) {
+    return (select(intentions)
+      ..where((tbl) => tbl.userId.equals(userId))
+      ..orderBy(<OrderClauseGenerator<$IntentionsTable>>[
+            (t) => OrderingTerm(expression: t.capturedAt, mode: OrderingMode.desc),
+      ])
+      ..limit(limit))
+        .watch();
+  }
 }
