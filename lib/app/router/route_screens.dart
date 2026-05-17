@@ -8,7 +8,9 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../domain/enums/plan_item_type.dart';
 import '../../domain/enums/temperature.dart';
+import '../../domain/models/intention.dart';
 import '../../domain/models/item_time.dart';
+import '../../domain/models/plan_item.dart';
 import '../../features/capture/presentation/editors/show_parent_picker.dart';
 import '../../features/capture/presentation/editors/show_recurrence_editor.dart';
 import '../../features/capture/presentation/editors/show_temperature_picker.dart';
@@ -19,6 +21,7 @@ import '../../features/capture/presentation/parsed_card_view_model.dart';
 import '../../features/capture/providers/plan_item_mutations.dart';
 import '../../features/capture/services/card_action_service.dart';
 import '../../features/capture/providers/capture_providers.dart';
+import '../../features/disposition/presentation/dispose_from_ui.dart';
 import '../../features/disposition/presentation/disposition_action.dart';
 import '../../shared/widgets/confirmation_detail_view.dart';
 
@@ -33,9 +36,7 @@ class ConfirmRouteScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Find the matching PendingCard by id. We pull from the pending
-    // list because we have access to the source intention (for the
-    // raw text quote block) and the plan item together.
+    // First, try the pending cards (the most common case after parsing).
     final AsyncValue<List<PendingCard>> pending =
     ref.watch(pendingCardsProvider);
 
@@ -44,101 +45,67 @@ class ConfirmRouteScreen extends ConsumerWidget {
       error: (Object e, _) =>
           _ScreenWithMessage(title: 'Confirm intention', message: 'Error: $e'),
       data: (List<PendingCard> cards) {
-        final PendingCard? card = cards.firstWhereOrNull(
+        final PendingCard? pendingCard = cards.firstWhereOrNull(
               (PendingCard c) => c.planItem.id == planItemId,
         );
-        if (card == null) {
-          // The plan item may have been confirmed / dismissed / dispositioned
-          // between when the user tapped and when this builder ran.
-          // Pop back gracefully.
+        if (pendingCard != null) {
+          // Unconfirmed (pending) card — full edit + confirm/dismiss flow.
+          return _ConfirmDetailContent(card: pendingCard, isPending: true);
+        }
+        // Fallback — already confirmed or otherwise not in the pending set.
+        // Load directly.
+        return _LoadFromDb(planItemId: planItemId);
+      },
+    );
+  }
+}
+
+/// Loads a plan item directly and renders the detail with "check in"
+/// instead of confirm/dismiss.
+class _LoadFromDb extends ConsumerWidget {
+  const _LoadFromDb({required this.planItemId});
+
+  final String planItemId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final AsyncValue<PlanItem?> item =
+    ref.watch(planItemByIdProvider(planItemId: planItemId));
+    return item.when(
+      loading: () => const _ScreenWithSpinner(title: 'Plan item'),
+      error: (Object e, _) =>
+          _ScreenWithMessage(title: 'Plan item', message: 'Error: $e'),
+      data: (PlanItem? p) {
+        if (p == null) {
           return _MissingPlanItemScreen(
             id: planItemId,
             onBack: () => GoRouter.of(context).pop(),
           );
         }
-        return ConfirmationDetailView(
-          viewModel: ParsedCardViewModelFactory.fromDomain(
-            item: card.planItem,
-            rawText: card.intention.rawText,
-          ),
-          onClose: () => GoRouter.of(context).pop(),
-          onEditTitle: () async {
-            final String? newTitle = await showTitleEditor(
-              context: context,
-              currentTitle: card.planItem.title,
+        // Look up the intention so we can show the raw text.
+        return Consumer(
+          builder: (BuildContext context, WidgetRef ref, _) {
+            final AsyncValue<Intention?> intention = ref.watch(
+              intentionByIdProvider(intentionId: p.intentionId),
             );
-            if (newTitle != null) {
-              await ref
-                  .read(planItemMutationsProvider.notifier)
-                  .updateTitle(card.planItem.id, newTitle);
-            }
-          },
-          onEditAttribute: (ParsedAttribute attr) async {
-            switch (attr.key) {
-              case 'type':
-                final PlanItemType? next = await showTypePicker(
-                  context: context,
-                  currentType: card.planItem.type,
-                );
-                if (next != null) {
-                  await ref
-                      .read(planItemMutationsProvider.notifier)
-                      .updateType(card.planItem.id, next);
+            return intention.when(
+              loading: () => const _ScreenWithSpinner(title: 'Plan item'),
+              error: (Object e, _) =>
+                  _ScreenWithMessage(title: 'Plan item', message: 'Error: $e'),
+              data: (Intention? i) {
+                if (i == null) {
+                  // Intention was deleted (e.g. via Settings → wipe);
+                  // the plan item should have been too via FK cascade.
+                  // Defensive: show missing.
+                  return _MissingPlanItemScreen(
+                    id: planItemId,
+                    onBack: () => GoRouter.of(context).pop(),
+                  );
                 }
-              case 'time':
-                final ItemTime? next = await showTimeEditor(
-                  context: context,
-                  currentTime: card.planItem.time,
-                );
-                if (next != null) {
-                  await ref
-                      .read(planItemMutationsProvider.notifier)
-                      .updateTime(card.planItem.id, next);
-                }
-              case 'recurrence':
-                final ItemTime? next = await showRecurrenceEditor(
-                  context: context,
-                  currentTime: card.planItem.time,
-                );
-                if (next != null) {
-                  await ref
-                      .read(planItemMutationsProvider.notifier)
-                      .updateTime(card.planItem.id, next);
-                }
-              case 'parent':
-                final result = await showParentPicker(
-                  context: context,
-                  excludeIds: <String>{card.planItem.id},
-                );
-                if (result != null && result.changed) {
-                  await ref
-                      .read(planItemMutationsProvider.notifier)
-                      .updateParent(card.planItem.id, result.newParent?.id);
-                }
-              case 'temperature':
-                final Temperature? next = await showTemperaturePicker(
-                  context: context,
-                  currentTemperature: card.planItem.temperature,
-                );
-                if (next != null) {
-                  await ref
-                      .read(planItemMutationsProvider.notifier)
-                      .updateTemperature(card.planItem.id, next);
-                }
-            }
-          },
-          onConfirm: () async {
-            await ref.read(cardActionServiceProvider).confirm(
-              planItemId: card.planItem.id,
+                final card = PendingCard(intention: i, planItem: p);
+                return _ConfirmDetailContent(card: card, isPending: false);
+              },
             );
-            if (context.mounted) GoRouter.of(context).pop();
-          },
-          onDismiss: () async {
-            await ref.read(cardActionServiceProvider).dismiss(
-              planItemId: card.planItem.id,
-              intentionId: card.intention.id,
-            );
-            if (context.mounted) GoRouter.of(context).pop();
           },
         );
       },
@@ -146,6 +113,123 @@ class ConfirmRouteScreen extends ConsumerWidget {
   }
 }
 
+/// The shared body — knows how to render the detail view both for
+/// pending cards and for already-confirmed items.
+class _ConfirmDetailContent extends ConsumerWidget {
+  const _ConfirmDetailContent({
+    required this.card,
+    required this.isPending,
+  });
+
+  final PendingCard card;
+  final bool isPending;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return ConfirmationDetailView(
+      viewModel: ParsedCardViewModelFactory.fromDomain(
+        item: card.planItem,
+        rawText: card.intention.rawText,
+      ),
+      onClose: () => GoRouter.of(context).pop(),
+      onEditTitle: () async {
+        final String? newTitle = await showTitleEditor(
+          context: context,
+          currentTitle: card.planItem.title,
+        );
+        if (newTitle != null) {
+          await ref
+              .read(planItemMutationsProvider.notifier)
+              .updateTitle(card.planItem.id, newTitle);
+        }
+      },
+      onEditAttribute: (ParsedAttribute attr) async {
+        // ... same body as before — Phase 06 Part 01 ...
+        switch (attr.key) {
+          case 'type':
+            final PlanItemType? next = await showTypePicker(
+              context: context,
+              currentType: card.planItem.type,
+            );
+            if (next != null) {
+              await ref
+                  .read(planItemMutationsProvider.notifier)
+                  .updateType(card.planItem.id, next);
+            }
+          case 'time':
+            final ItemTime? next = await showTimeEditor(
+              context: context,
+              currentTime: card.planItem.time,
+            );
+            if (next != null) {
+              await ref
+                  .read(planItemMutationsProvider.notifier)
+                  .updateTime(card.planItem.id, next);
+            }
+          case 'recurrence':
+            final ItemTime? next = await showRecurrenceEditor(
+              context: context,
+              currentTime: card.planItem.time,
+            );
+            if (next != null) {
+              await ref
+                  .read(planItemMutationsProvider.notifier)
+                  .updateTime(card.planItem.id, next);
+            }
+          case 'parent':
+            final result = await showParentPicker(
+              context: context,
+              excludeIds: <String>{card.planItem.id},
+            );
+            if (result != null && result.changed) {
+              await ref
+                  .read(planItemMutationsProvider.notifier)
+                  .updateParent(card.planItem.id, result.newParent?.id);
+            }
+          case 'temperature':
+            final Temperature? next = await showTemperaturePicker(
+              context: context,
+              currentTemperature: card.planItem.temperature,
+            );
+            if (next != null) {
+              await ref
+                  .read(planItemMutationsProvider.notifier)
+                  .updateTemperature(card.planItem.id, next);
+            }
+        }
+      },
+      onConfirm: isPending
+          ? () async {
+        await ref.read(cardActionServiceProvider).confirm(
+          planItemId: card.planItem.id,
+        );
+        if (context.mounted) GoRouter.of(context).pop();
+      }
+          : () => GoRouter.of(context).pop(), // already confirmed; just close
+      onDismiss: isPending
+          ? () async {
+        await ref.read(cardActionServiceProvider).dismiss(
+          planItemId: card.planItem.id,
+          intentionId: card.intention.id,
+        );
+        if (context.mounted) GoRouter.of(context).pop();
+      }
+          : () => GoRouter.of(context).pop(), // already confirmed; just close
+      onCheckIn: isPending
+          ? null
+          : () async {
+        await disposeFromUi(
+          context: context,
+          ref: ref,
+          item: card.planItem,
+          prompted: false,
+        );
+      },
+      confirmLabel: isPending ? 'Add to plan' : 'Done',
+      dismissLabel: isPending ? 'Dismiss' : 'Close',
+    );
+  }
+}
 /// Tiny utility — Flutter's `firstWhere` throws when not found; we
 /// re-implement the safe variant rather than depend on `collection`
 /// at the route layer.

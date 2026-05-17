@@ -20,6 +20,9 @@ class ConfirmationDetailView extends StatelessWidget {
     required this.onEditAttribute,
     required this.onConfirm,
     required this.onDismiss,
+    this.onCheckIn,
+    this.confirmLabel = 'Add to plan',
+    this.dismissLabel = 'Dismiss',
   });
 
   final ParsedCardViewModel viewModel;
@@ -39,6 +42,14 @@ class ConfirmationDetailView extends StatelessWidget {
   /// Discard the structured plan item. The raw intention is retained.
   final VoidCallback onDismiss;
 
+  /// If non-null, the AppBar shows a "Check in" action that opens the
+  /// disposition sheet for the item. Only supplied when the plan item
+  /// is already user-confirmed.
+  final VoidCallback? onCheckIn;
+
+  final String confirmLabel;
+  final String dismissLabel;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -50,6 +61,14 @@ class ConfirmationDetailView extends StatelessWidget {
           tooltip: 'Close',
           onPressed: onClose,
         ),
+        actions: <Widget>[
+          if (onCheckIn != null)
+            TextButton.icon(
+              onPressed: onCheckIn,
+              icon: const Icon(Icons.more_horiz),
+              label: const Text('Check in'),
+            ),
+        ],
       ),
       body: SafeArea(
         top: false,
@@ -91,7 +110,7 @@ class ConfirmationDetailView extends StatelessWidget {
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(AppSpacing.lg),
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             color: AppColors.surfaceSecondary,
             borderRadius: AppSpacing.borderRadiusMedium,
           ),
@@ -187,7 +206,7 @@ class ConfirmationDetailView extends StatelessWidget {
 
   Widget _actionBar() {
     return Container(
-      padding: EdgeInsets.fromLTRB(
+      padding: const EdgeInsets.fromLTRB(
         AppSpacing.lg,
         AppSpacing.md,
         AppSpacing.lg,
@@ -206,7 +225,7 @@ class ConfirmationDetailView extends StatelessWidget {
             Expanded(
               child: OutlinedButton(
                 onPressed: onDismiss,
-                child: const Text('Dismiss'),
+                child:  Text(dismissLabel),
               ),
             ),
             const SizedBox(width: AppSpacing.md),
@@ -214,7 +233,8 @@ class ConfirmationDetailView extends StatelessWidget {
               flex: 2,
               child: FilledButton(
                 onPressed: onConfirm,
-                child: const Text('Add to plan'),
+
+                child:  Text(confirmLabel),
               ),
             ),
           ],

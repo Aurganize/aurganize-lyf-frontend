@@ -10,6 +10,7 @@ import '../../../domain/enums/plan_item_state.dart';
 import '../../../domain/models/item_time.dart';
 import '../../../domain/models/plan_item.dart';
 import '../../../shared/widgets/plan_item_row.dart';
+import '../../disposition/presentation/dispose_from_ui.dart';
 import '../../disposition/presentation/disposition_action.dart';
 import '../../disposition/presentation/show_disposition_sheet.dart';
 import '../../disposition/providers/disposition_controller.dart';
@@ -278,11 +279,14 @@ class _RealRows extends ConsumerWidget {
               timeHint: _timeHintFor(visible[i].time),
               showDivider: i < visible.length - 1 || overflow > 0,
               onTap: () => onRowTap(visible[i]),
-              onDispositionTap: () => _openDispositionSheet(
-                context: context,
-                ref: ref,
-                item: visible[i],
-              ),
+              onDispositionTap: () async {
+                await disposeFromUi(
+                  context: context,
+                  ref: ref,
+                  item: visible[i],
+                  prompted: true,
+                );
+              },
             ),
           if (overflow > 0) _SeeAllRow(remaining: overflow + 1),
         ],
@@ -381,38 +385,3 @@ String _dayName(String byday) {
   };
 }
 
-Future<void> _openDispositionSheet({
-  required BuildContext context,
-  required WidgetRef ref,
-  required PlanItem item,
-}) async {
-  final String question = ref
-      .read(questionRotatorProvider.notifier)
-      .questionFor(item.title);
-
-  final DispositionAction? choice = await showDispositionSheet(
-    context: context,
-    question: question,
-  );
-  if (choice == null) return;
-
-  // Fire-and-forget the disposition. The controller updates state and
-  // emits a toast; we don't need the result inline.
-  try {
-    await ref
-        .read(dispositionControllerProvider.notifier)
-        .dispose(
-      planItemId: item.id,
-      action: choice,
-      prompted: true,
-    );
-  } catch (error) {
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Couldn\'t save: $error'),
-        ),
-      );
-    }
-  }
-}
