@@ -225,4 +225,13 @@ class PlanItemDao extends DatabaseAccessor<AurganizeDatabase>
   Future<void> deletePlanItem(String id) {
     return (delete(planItems)..where((tbl) => tbl.id.equals(id))).go();
   }
+
+  Future<void> markConfirmed(String id, {required DateTime now}) {
+    return (update(planItems)..where((tbl) => tbl.id.equals(id))).write(
+      PlanItemsCompanion(
+        confirmed: const Value<bool>(true),
+        updatedAt: Value<DateTime>(now),
+      ),
+    );
+  }
 }

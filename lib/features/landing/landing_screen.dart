@@ -1,4 +1,5 @@
 import 'package:aurganize_lyf/features/landing/widgets/landing_app_header.dart';
+import 'package:aurganize_lyf/features/landing/widgets/peek_card_stack.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -7,6 +8,7 @@ import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
 import '../../domain/models/plan_item.dart';
 import '../../shared/widgets/date_train.dart';
+import '../capture/providers/capture_providers.dart';
 import '../disposition/providers/disposition_toast.dart';
 import '../plan/providers/date_train_provider.dart';
 import '../plan/providers/items_for_date_provider.dart';
@@ -103,6 +105,35 @@ class LandingScreen extends ConsumerWidget {
                   const Spacer(),
                 ],
               ),
+            ),
+
+            // ── Peek stack docked above the island ─────────────────────────────
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: AppSpacing.xxl + AppSpacing.floatingIslandHeight + AppSpacing.lg,
+              child: Consumer(builder: (BuildContext context, WidgetRef ref, _) {
+                final pending = ref.watch(pendingCardsProvider);
+                return pending.maybeWhen(
+                  data: (List<PendingCard> cards) {
+                    if (cards.isEmpty) return const SizedBox.shrink();
+                    return PeekCardStack(
+                      cards: cards,
+                      onOpen: (PendingCard card) {
+                        // Phase 05 Part 05 wires this to /confirm/:planItemId.
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              'Open confirmation for ${card.planItem.title}',
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                  },
+                  orElse: () => const SizedBox.shrink(),
+                );
+              }),
             ),
 
             // The island floats over the canvas.

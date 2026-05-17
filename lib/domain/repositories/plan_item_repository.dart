@@ -102,4 +102,12 @@ abstract interface class PlanItemRepository {
     required bool prompted,
     DateTime? rescheduleTo,
   });
+
+  /// Marks the plan item as user-confirmed. Idempotent; calling on an
+  /// already-confirmed item is a no-op.
+  Future<void> markConfirmed(String planItemId);
+
+  /// True if at least one disposition event has been recorded for
+  /// [planItemId]. Used by the pending-cards filter.
+  Future<bool> hasAnyDisposition(String planItemId);
 }

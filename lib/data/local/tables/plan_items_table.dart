@@ -76,6 +76,15 @@ class PlanItems extends Table {
 
   TextColumn get groupId => text().named('group_id').nullable()();
 
+  /// Whether the user has explicitly accepted this plan item.
+  ///
+  /// Parser-produced items default to `false`. The user flips this to
+  /// `true` by tapping "Add to plan" on the confirmation peek or detail.
+  /// User-created items (manually added via the project view, etc.) are
+  /// inserted with `confirmed: true`.
+  BoolColumn get confirmed =>
+      boolean().withDefault(const Constant<bool>(false))();
+
   @override
   Set<Column<Object>> get primaryKey => <Column<Object>>{id};
 }

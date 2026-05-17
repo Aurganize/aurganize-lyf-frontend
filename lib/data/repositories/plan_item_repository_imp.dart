@@ -283,6 +283,17 @@ class DriftPlanItemRepository implements PlanItemRepository {
     });
   }
 
+  @override
+  Future<void> markConfirmed(String planItemId) async {
+    await _planDao.markConfirmed(planItemId, now: DateTime.now().toUtc());
+  }
+
+  @override
+  Future<bool> hasAnyDisposition(String planItemId) async {
+    final latest = await _eventDao.latestFor(planItemId);
+    return latest != null;
+  }
+
 }
 
 /// Internal mutable scaffold for tree assembly. Discarded after [_freeze].

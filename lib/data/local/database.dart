@@ -76,13 +76,23 @@ class AurganizeDatabase extends _$AurganizeDatabase {
 
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (Migrator m) async {
       await m.createAll();
       await _createIndices(m);
+    },
+    onUpgrade: (Migrator m, int from, int to) async {
+      if (from < 2) {
+        // v1 → v2: add `confirmed` column to plan_items.
+        // The default of false matches the schema default; existing
+        // rows will read as unconfirmed, which is the right answer
+        // (those were parser candidates the user never explicitly
+        // confirmed).
+        await m.addColumn(planItems, planItems.confirmed);
+      }
     },
     beforeOpen: (OpeningDetails details) async {
       // SQLite ships with foreign keys disabled by default. Enable them
@@ -103,6 +113,7 @@ class AurganizeDatabase extends _$AurganizeDatabase {
         // strict is an enhancement, not a correctness requirement.
       });
     },
+
     // For v1 there is no upgrade path. Add `from: ...` branches here
     // in v2+ releases.
   );

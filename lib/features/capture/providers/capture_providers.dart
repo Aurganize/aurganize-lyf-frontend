@@ -63,27 +63,22 @@ Stream<List<PendingCard>> pendingCards(PendingCardsRef ref) async* {
   ref.watch(intentionRepositoryProvider);
   final PlanItemRepository planRepo = ref.watch(planItemRepositoryProvider);
 
-  // We poll the recent-list at a debounce instead of a true stream
-  // (the repository doesn't expose a watchRecentForUser in v1.0).
-  // The poll rate is fast enough that the user sees cards arrive
-  // within ~1s of parsing completing, slow enough that idle screens
-  // don't churn the database.
   while (true) {
     final List<Intention> recent =
     await intentionRepo.findRecentForUser(userId, limit: 30);
     final List<PendingCard> cards = <PendingCard>[];
+
     for (final Intention i in recent) {
       if (i.parseStatus != ParseStatus.parsed) continue;
+
       final List<PlanItem> items = await planRepo.findByIntention(i.id);
       for (final PlanItem item in items) {
-        // Cards are "pending" until the user explicitly confirms or
-        // dismisses them. We mark confirmation by recording at least
-        // one disposition event, OR by clearing the intention's
-        // status to `dismissed`. (See Phase 04 Part 04 for disposition.)
-        // For now, all parsed-not-dismissed cards are pending.
+        if (item.confirmed) continue;
+        if (await planRepo.hasAnyDisposition(item.id)) continue;
         cards.add(PendingCard(intention: i, planItem: item));
       }
     }
+
     yield cards;
     await Future<void>.delayed(const Duration(seconds: 1));
   }

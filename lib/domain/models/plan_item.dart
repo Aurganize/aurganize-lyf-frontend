@@ -60,6 +60,9 @@ class PlanItem with _$PlanItem {
     /// SRS FR-6.4: unscored items MUST be excluded from gamification.
     @Default(true) bool scored,
 
+    /// Whether the user has explicitly accepted this plan item.
+    @Default(false) bool confirmed,
+
     /// Per-attribute confidence map. Keys are field names (`'type'`,
     /// `'time'`, `'parent'`, `'temperature'`). Missing keys imply
     /// [Confidence.certain] — i.e. the user set it.
