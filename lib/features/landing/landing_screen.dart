@@ -10,8 +10,10 @@ import '../../core/extensions/datetime_extensions.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/theme/app_spacing.dart';
 import '../../core/theme/app_typography.dart';
+import '../../domain/enums/capture_source.dart';
 import '../../domain/models/plan_item.dart';
 import '../../shared/widgets/date_train.dart';
+import '../capture/providers/capture_controller.dart';
 import '../capture/providers/capture_providers.dart';
 import '../disposition/providers/disposition_toast.dart';
 import '../plan/providers/date_train_provider.dart';
@@ -232,24 +234,76 @@ class _ConversationPanelPlaceholder extends StatelessWidget {
             ),
           ),
           // Placeholder input bar so the bottom edge is visually anchored.
-          const TextField(
-            decoration: InputDecoration(
-              hintText: 'Type a message...',
-              filled: true,
-              fillColor: AppColors.surfaceTertiary,
-              contentPadding: EdgeInsets.symmetric(
-                horizontal: AppSpacing.lg,
-                vertical: 12,
-              ),
-              border: OutlineInputBorder(
-                borderRadius: AppSpacing.borderRadiusPill,
-                borderSide: BorderSide.none,
-              ),
-            ),
-          ),
+          const _ConversationComposer(),
           const SizedBox(height: AppSpacing.lg),
         ],
       ),
+    );
+  }
+}
+
+class _ConversationComposer extends ConsumerStatefulWidget {
+  const _ConversationComposer();
+
+  @override
+  ConsumerState<_ConversationComposer> createState() =>
+      _ConversationComposerState();
+}
+
+class _ConversationComposerState
+    extends ConsumerState<_ConversationComposer> {
+
+  final TextEditingController _controller =
+  TextEditingController();
+
+  bool _submitting = false;
+
+  Future<void> _submit() async {
+    final text = _controller.text.trim();
+    if (text.isEmpty || _submitting) return;
+
+    setState(() => _submitting = true);
+
+    try {
+      await ref.read(captureControllerProvider.notifier).submit(
+        rawText: text,
+        source: CaptureSource.typed,
+      );
+
+      _controller.clear();
+    } finally {
+      if (mounted) {
+        setState(() => _submitting = false);
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: TextField(
+            controller: _controller,
+            textInputAction: TextInputAction.send,
+            onSubmitted: (_) => _submit(),
+            decoration: const InputDecoration(
+              hintText: 'Type a message...',
+              filled: true,
+            ),
+          ),
+        ),
+        IconButton(
+          onPressed: _submit,
+          icon: const Icon(Icons.send),
+        ),
+      ],
     );
   }
 }

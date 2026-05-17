@@ -6,6 +6,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../../../features/landing/landing_screen.dart';
 import '../../../features/onboarding/onboarding_providers.dart';
 import '../../../features/onboarding/onboarding_screen.dart';
+import '../../domain/models/plan_item.dart';
 import '../../features/landing/widgets/conversation_stage.dart';
 import 'route_screens.dart';
 import 'routes.dart';
@@ -174,11 +175,18 @@ class _LandingRouteShell extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final GoRouter router = GoRouter.of(context);
     return LandingScreen(
-      onOpenPlanItem: (item) {
-        router.pushNamed(
-          'confirm',
-          pathParameters: <String, String>{'planItemId': item.id},
-        );
+      onOpenPlanItem: (PlanItem item) {
+        if (item.isProject) {
+          router.pushNamed(
+            'plan',
+            pathParameters: <String, String>{'rootId': item.id},
+          );
+        } else {
+          router.pushNamed(
+            'confirm',
+            pathParameters: <String, String>{'planItemId': item.id},
+          );
+        }
       },
       onOpenSettings: () => router.pushNamed('settings'),
       onExpandIsland: () {

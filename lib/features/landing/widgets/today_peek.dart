@@ -278,7 +278,14 @@ class _RealRows extends ConsumerWidget {
               state: PlanItemState.planned, // active items only
               timeHint: _timeHintFor(visible[i].time),
               showDivider: i < visible.length - 1 || overflow > 0,
-              onTap: () => onRowTap(visible[i]),
+              onTap: () {
+                if (visible[i].isProject) {
+                  // Project items → project view.
+                  onRowTap(visible[i]); // host decides; landing routes appropriately
+                } else {
+                  onRowTap(visible[i]);
+                }
+              },
               onDispositionTap: () async {
                 await disposeFromUi(
                   context: context,

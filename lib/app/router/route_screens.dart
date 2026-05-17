@@ -23,6 +23,7 @@ import '../../features/capture/services/card_action_service.dart';
 import '../../features/capture/providers/capture_providers.dart';
 import '../../features/disposition/presentation/dispose_from_ui.dart';
 import '../../features/disposition/presentation/disposition_action.dart';
+import '../../features/plan/presentation/project_screen.dart';
 import '../../shared/widgets/confirmation_detail_view.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -156,6 +157,7 @@ class _ConfirmDetailContent extends ConsumerWidget {
                   .read(planItemMutationsProvider.notifier)
                   .updateType(card.planItem.id, next);
             }
+            break;
           case 'time':
             final ItemTime? next = await showTimeEditor(
               context: context,
@@ -166,6 +168,7 @@ class _ConfirmDetailContent extends ConsumerWidget {
                   .read(planItemMutationsProvider.notifier)
                   .updateTime(card.planItem.id, next);
             }
+            break;
           case 'recurrence':
             final ItemTime? next = await showRecurrenceEditor(
               context: context,
@@ -176,6 +179,7 @@ class _ConfirmDetailContent extends ConsumerWidget {
                   .read(planItemMutationsProvider.notifier)
                   .updateTime(card.planItem.id, next);
             }
+            break;
           case 'parent':
             final result = await showParentPicker(
               context: context,
@@ -186,6 +190,7 @@ class _ConfirmDetailContent extends ConsumerWidget {
                   .read(planItemMutationsProvider.notifier)
                   .updateParent(card.planItem.id, result.newParent?.id);
             }
+            break;
           case 'temperature':
             final Temperature? next = await showTemperaturePicker(
               context: context,
@@ -196,6 +201,7 @@ class _ConfirmDetailContent extends ConsumerWidget {
                   .read(planItemMutationsProvider.notifier)
                   .updateTemperature(card.planItem.id, next);
             }
+            break;
         }
       },
       onConfirm: isPending
@@ -269,10 +275,7 @@ class PlanRouteScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _ScreenWithMessage(
-      title: 'Project',
-      message: 'Project view for $rootId — Phase 06 Part 03',
-    );
+    return ProjectScreen(rootId: rootId);
   }
 }
 
